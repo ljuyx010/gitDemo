@@ -242,3 +242,46 @@ git hlep 命令 #可以查看命令的帮助文档
     
 
 ## 本地库和远程库
+
+远程地址添加别名
+
+```sh
+#查看别名
+$ git remote -v
+
+#添加别名
+git remote add 别名 远程url
+
+#推送到远程服务器
+git push 别名 master(分支名)
+
+#克隆远程服务器代码
+git clone  远程url
+
+```
+
+邀请加入团队
+
+![image-20250812173431239](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250812173431239.png)
+
+被邀请人加入团队
+
+被邀请人复制链接到浏览器访问，点同意即可。
+
+![image-20250812173605906](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250812173605906.png)
+
+远程库的拉取分两个步骤：pull = fetch + merge
+
+1.`git fetch [远程库别名] [远程库分支]`把远程数据下载到本地并不会修改本地的数据
+
+2.`git merge [远程库别名]/[远程库分支]` 把远程库的数据合并到本地库，本地库的数据改变了
+
+分两步的好处是可以更精细化的管理，避免冲突。
+
+**解决冲突**
+
+如果不是基于`github`远程库的最新版所做的修改，不能推送，必须先拉取。
+
+拉取下来后如果进入冲突状态，则按照“分支冲突解决”操作，解决即可。
+
+41
