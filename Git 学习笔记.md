@@ -284,4 +284,103 @@ git clone  远程url
 
 拉取下来后如果进入冲突状态，则按照“分支冲突解决”操作，解决即可。
 
-41
+## 跨团队协助
+
+协助人登录自己的账号访问项目Github的url，并点击Fork
+
+![image-20250813145522687](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813145522687.png)
+
+协助人`git clone [fork远程库url]`下载克隆到本地修改
+
+协作人修改完成后，`git commit -m "更改描述" [file]`提交到本地库
+
+协作人`git push [fork远程库url] master`推送到远程库
+
+协作人发起pull requests
+
+1.
+
+![image-20250813151803418](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813151803418.png)
+
+2.
+
+![image-20250813152318667](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152318667.png)
+
+3.
+
+![image-20250813152418604](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152418604.png)
+
+4.
+
+![image-20250813152636299](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152636299.png)
+
+5.原仓库所有者去接收 pull requests
+
+![image-20250813155550346](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813155550346.png)
+
+![image-20250813155812388](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813155812388.png)
+
+6.合并代码
+
+![image-20250813160048825](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813160048825.png)
+
+7.把远程库拉取到本地
+
+## 设置ssh远程登录
+
+1.本地生成ssh-keygen
+
+```sh
+$ ssh-keygen -t rsa -C 649047079@qq.com
+Generating public/private rsa key pair.
+Enter file in which to save the key (/c/Users/Administrator/.ssh/id_rsa):
+Created directory '/c/Users/Administrator/.ssh'.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /c/Users/Administrator/.ssh/id_rsa
+Your public key has been saved in /c/Users/Administrator/.ssh/id_rsa.pub
+The key fingerprint is:
+SHA256:ginpEGncDG8EtVuvN78UUNSBB2/SONk4lYA/LHwfSjs 649047079@qq.com
+The key's randomart image is:
++---[RSA 3072]----+
+| ooo    o==oo    |
+|..* .  ...O+     |
+|oo * ...oB.=     |
+|....oo.o.*=.     |
+|. o.o ..S.= .    |
+| o .  .. E..     |
+|  .  . o ..      |
+|      . +        |
+|         o.      |
++----[SHA256]-----+
+#查看生成的key
+Administrator@SK-20220401RKFZ MINGW64 ~/.ssh
+$ ll
+total 5
+-rw-r--r-- 1 Administrator 197121 2602 Aug 13 16:14 id_rsa
+-rw-r--r-- 1 Administrator 197121  570 Aug 13 16:14 id_rsa.pub
+#复制id_rsa.pub的ssh-rsa内容
+Administrator@SK-20220401RKFZ MINGW64 ~/.ssh
+$ cat id_rsa.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDKKwyzAk2HNnyv2lghJCl8aKbvrTszd03iSGy+9cIcDQVnPBUX1ffFgZ9NSq27pfPIiJgX09aCNwm31fz4vETDVxq09O14FLGPRpDcbupofhWaNC7KEwpT0ewsLlSKrVySkT3XrJOO6CG0OqMhSrFLGNbKc//rrgLvsosoyWmkRg86U2dxEzdVj5859ueCe8QtUhT8zDvUzzLr/l6ty3wI0qcqm7/G6K/hATqso9itYiN/mvP6Eymrk+yHuPzfiLZTYr/3tz79Xt/Fb0BRt0wdW+ywBQr6qj6wGUJNu+2a/4JW/oh4a2KVtRkHOHnvIv4h/kU3fQD9CD6TrabykxxWovIVTVJnjcR1J0DX+XEWDvQ4kgmi/SypKoMNj6+CkF5gvTn3d1dOG+yWpQAl8cSvSEf4AxkpUmh73NNUogr55pFD3E2Qe8ZxCAzO+NxIa6mGqGsKsSbOteWobyVP0VcK3dEdZj429uaEzcfpkZUz5Nd13UREZZJTGTOD3kQQlHc=
+
+```
+
+粘贴到github的账号设置中
+
+![image-20250813162728635](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813162728635.png)
+
+设置ssh的别名
+
+![image-20250813163833129](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813163833129.png)
+
+````sh
+$ git remote add gitDemo_ssh git@github.com:ljuyx010/gitDemo.git
+$ git remote -v
+gitDemo_ssh     git@github.com:ljuyx010/gitDemo.git (fetch)
+gitDemo_ssh     git@github.com:ljuyx010/gitDemo.git (push)
+gitdemo https://github.com/ljuyx010/gitDemo.git (fetch)
+gitdemo https://github.com/ljuyx010/gitDemo.git (push)
+
+````
+
