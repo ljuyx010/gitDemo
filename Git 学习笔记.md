@@ -407,3 +407,17 @@ To github.com:ljuyx010/gitDemo.git
 
 ````
 
+## 忽略文件
+
+忽略文件样例
+
+https://github.com/github/gitignore
+
+可以把忽略文件引入到git配置文件中
+
+```sh
+[core]
+excludesfile = [忽略配置文件路径]
+#注意:忽略配置文件的路径一定要使用'/'，不能使用'\'
+```
+
