@@ -382,5 +382,28 @@ gitDemo_ssh     git@github.com:ljuyx010/gitDemo.git (push)
 gitdemo https://github.com/ljuyx010/gitDemo.git (fetch)
 gitdemo https://github.com/ljuyx010/gitDemo.git (push)
 
+#使用ssh链接推送代码到远程仓库
+Administrator@SK-20220401RKFZ MINGW64 /d/www/gitDemo (master)
+$ git commit -m "第41-42课" Git\ 学习笔记.md
+[master d1fde5a] 第41-42课
+ 1 file changed, 100 insertions(+), 1 deletion(-)
+
+Administrator@SK-20220401RKFZ MINGW64 /d/www/gitDemo (master)
+$ git push gitDemo_ssh master
+The authenticity of host 'github.com (20.205.243.166)' can't be established.
+ED25519 key fingerprint is SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 1.97 KiB | 1009.00 KiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To github.com:ljuyx010/gitDemo.git
+   e0d2ec8..d1fde5a  master -> master
+
 ````
 
