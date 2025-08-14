@@ -421,3 +421,25 @@ excludesfile = [忽略配置文件路径]
 #注意:忽略配置文件的路径一定要使用'/'，不能使用'\'
 ```
 
+## 部署自己的远程库
+
+远程库软件是gitlab，建议使用centos 7系统
+
+### **CentOS 7系统使用yum安装**
+
+新建 `/etc/yum.repos.d/gitlab-ce.repo`，内容为
+
+```
+[gitlab-ce]
+name=Gitlab CE Repository
+baseurl=https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/yum/el$releasever/
+gpgcheck=0
+enabled=1
+```
+
+再执行
+
+```
+yum makecache
+yum install gitlab-ce
+```
