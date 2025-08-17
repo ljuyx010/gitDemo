@@ -3,6 +3,7 @@
 # @File    : arithmetic.py
 # @Time    : 2025/8/16 22:00
 # 运算符演示
+from tkinter.font import names
 
 # 除号，返回的是小数
 print(10 / 3)
@@ -27,3 +28,27 @@ a = 234.5
 b = 5 / 9 * (a - 100)
 print(f"{a}华氏度={b}摄氏度")
 print("%.2f华氏度=%.2f摄氏度" % (a, b))
+
+# 逻辑运算符
+a = 1
+b = 99
+print(a and b)  # 99
+print((a > b) and b)  # false
+print((a < b) and b)  # 99
+
+print(a or b)  # 1
+print((a > b) or b)  # 99
+print((a < b) or b)  # true
+
+print("-----------------------------")
+x = 30
+y = 40
+x, y = y, x
+print(f"x={x},y={y}")
+
+# 用三元运算求两个数的较大值
+a = 10
+b = 80
+max = a if a > b else b
+print("较大值是", max)
+
