@@ -20,8 +20,26 @@
 
 # 判断一个年份师傅是闰年，闰年的条件是复合下面二者之一
 # （1）年份能被4整除但不能被100整除，（2）能被400整除
-year = 2020
-if (year % 4 == 0 and year % 100 != 0) or year % 400 == 0:
-    print(f"{year}是闰年")
+# year = 2020
+# if (year % 4 == 0 and year % 100 != 0) or year % 400 == 0:
+#     print(f"{year}是闰年")
+# else:
+#     print(f"{year}不是闰年")
+
+
+#多分支案例
+# 小头儿子参加python考试，他和大头爸爸达成承诺：
+# 如果：成绩为100分时，奖励一辆bmw
+# 成绩为（80,99】时，奖励一趟iphone13
+# 当成绩为【60,80】时，奖励一个ipad
+# 其他时，什么奖励都没有。
+# 请从键盘输入小头儿子的期末成绩，并加以判断
+score = int(input("请输入小头儿子的成绩："))
+if score == 100:
+    print("奖励一辆bmw")
+elif 80 < score <= 99:
+    print("奖励一趟iphone13")
+elif 60 <= score <= 80:
+    print("奖励一个ipad")
 else:
-    print(f"{year}不是闰年")
+    print("什么奖励都没有")
