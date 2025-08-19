@@ -826,4 +826,59 @@ for i in range(1,total_level + 1):
     print("")
 ```
 
-61
+```python
+#课后练习打印出九九乘法表
+
+for i in range(1, 10):
+    for j in range(1, i+1):
+        print(f"{i} X {j} = {i*j} ", end=" ")
+    print("")
+```
+
+### break语句
+
+break语句是用在for或while循环所嵌套的代码
+
+它会终结最近的外层循环，如果循环有可选的else子句，也会跳过该子句。 
+
+如果一个for循环被break锁终结，该循环的控制变量会保持其当前值。
+
+```python
+# 实例，随机生成1-100的整数，如果等于97则统计随机生成了多少次
+import random
+k=0
+while True:  #无限循环生成随机数
+    num = random.randint(1, 100)
+    print(num)
+    k += 1       #统计生成次数
+    if num == 97:
+        break    #退出循环
+print(f"循环了{k}次")
+```
+
+### continue语句
+
+continue语句用于for或while循环所嵌套的代码中
+
+continue语句用于结束本次循环，继续执行循环的下一个轮次，（继续执行的是：该continue最近的外层循环的下一个轮次）。
+
+### return语句
+
+return使用在函数，表示跳出所在的函数
+
+```python
+#return 实例
+def f1():
+    for i in range(1,5):
+        if i == 3:
+            return
+        	#break
+            #continue
+        print("i =", i)
+    print("结束了for...")
+    
+#调用f1函数--》执行f1函数
+f1()
+```
+
+66

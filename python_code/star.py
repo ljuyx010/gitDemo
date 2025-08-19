@@ -34,10 +34,10 @@ for i in range(5):
 """
 
 # 打印直角三角形
-for i in range(1,6):
+for i in range(1, 6):
     for j in range(i):
-        print("*",end="")
-        j+=1
+        print("*", end="")
+        j += 1
     print("")
 
 # 打印金字塔
@@ -46,16 +46,16 @@ for i in range(1,6):
 #    *****    3层：5个*  2X3-1 空格数 2
 #   *******   4层：7个*  2X4-1 空格数 1
 #  *********  5层:9个*  2Xn-1  空格数 0  总层数-n
-for i in range(1,6):
-    for j in range(2*i-1):
-        print("*",end="")
+for i in range(1, 6):
+    for j in range(2 * i - 1):
+        print("*", end="")
     print("")
 
-for i in range(1,6):
-    for k in range(5-i):
-        print(" ",end="")
-    for j in range(2*i-1):
-        print("*",end="")
+for i in range(1, 6):
+    for k in range(5 - i):
+        print(" ", end="")
+    for j in range(2 * i - 1):
+        print("*", end="")
     print("")
 
 """
@@ -79,42 +79,42 @@ for i in range(1,6):
 #         print("*", end="")
 #     print("")
 
-for i in range(1,6):
-    for k in range(5-i):  # 每行输出的空格数为总层减当前层
-        print(" ",end="")  # 输出第一个星前面的空格
-    for j in range(2 * i - 1): #每层输出的星总个数
-        if j == 0 or j == 2*(i-1) or i == 5: # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
-            print("*",end="")
+for i in range(1, 6):
+    for k in range(5 - i):  # 每行输出的空格数为总层减当前层
+        print(" ", end="")  # 输出第一个星前面的空格
+    for j in range(2 * i - 1):  # 每层输出的星总个数
+        if j == 0 or j == 2 * (i - 1) or i == 5:  # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
+            print("*", end="")
         else:
-            print(" ", end="") #否则就输出空格
+            print(" ", end="")  # 否则就输出空格
     print("")
 
-#先死后活，把层数改成不固定
+# 先死后活，把层数改成不固定
 total_level = 10
-for i in range(1,total_level + 1):
+for i in range(1, total_level + 1):
     for k in range(total_level - i):  # 每行输出的空格数为总层减当前层
-        print(" ",end="")  # 输出第一个星前面的空格
-    for j in range(2 * i - 1): #每层输出的星总个数
-        if j == 0 or j == 2*(i-1) or i == total_level: # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
-            print("*",end="")
+        print(" ", end="")  # 输出第一个星前面的空格
+    for j in range(2 * i - 1):  # 每层输出的星总个数
+        if j == 0 or j == 2 * (i - 1) or i == total_level:  # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
+            print("*", end="")
         else:
-            print(" ", end="") #否则就输出空格
+            print(" ", end="")  # 否则就输出空格
     print("")
 
 # 把代码转成while循环写出来
 total_level = 8
-i=1
+i = 1
 while i <= total_level:
-    k=1
+    k = 1
     while k <= total_level - i:  # 每行输出的空格数为总层减当前层
-        print(" ",end="")  # 输出第一个星前面的空格
+        print(" ", end="")  # 输出第一个星前面的空格
         k += 1
     j = 1
-    while j <= 2 * i - 1: #每层输出的星总个数
-        if j == 1 or j == 2 * i - 1 or i == total_level: # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
-            print("*",end="")
+    while j <= 2 * i - 1:  # 每层输出的星总个数
+        if j == 1 or j == 2 * i - 1 or i == total_level:  # 如果是最后一行或者是每行的第一个和每行的最后一个星就输出
+            print("*", end="")
         else:
-            print(" ", end="") #否则就输出空格
+            print(" ", end="")  # 否则就输出空格
         j += 1
     i += 1
     print("")
