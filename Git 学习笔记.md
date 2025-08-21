@@ -204,7 +204,7 @@ git hlep 命令 #可以查看命令的帮助文档
 
 - 什么是分支
   在版本控制过程中，使用多条线同时推进多个任务。
-  ![image-20250811172503126](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250811172503126.png)
+  ![image-20250811172503126](.\img\image-20250811172503126.png)
 
   
 
@@ -230,7 +230,7 @@ git hlep 命令 #可以查看命令的帮助文档
     第二步：执行`git merge [分支名]`命令
 
   - 解决冲突
-    ![image-20250811174031444](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250811174031444.png)
+    ![image-20250811174031444](.\img\image-20250811174031444.png)
     冲突的解决：
     第一步：编辑文件，删除特殊符号
     第二步：把文件修改到满意的程度，保存退出
@@ -262,13 +262,13 @@ git clone  远程url
 
 邀请加入团队
 
-![image-20250812173431239](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250812173431239.png)
+![image-20250812173431239](.\img\image-20250812173431239.png)
 
 被邀请人加入团队
 
 被邀请人复制链接到浏览器访问，点同意即可。
 
-![image-20250812173605906](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250812173605906.png)
+![image-20250812173605906](.\img\image-20250812173605906.png)
 
 远程库的拉取分两个步骤：pull = fetch + merge
 
@@ -288,7 +288,7 @@ git clone  远程url
 
 协助人登录自己的账号访问项目Github的url，并点击Fork
 
-![image-20250813145522687](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813145522687.png)
+![image-20250813145522687](.\img\image-20250813145522687.png)
 
 协助人`git clone [fork远程库url]`下载克隆到本地修改
 
@@ -300,29 +300,29 @@ git clone  远程url
 
 1.
 
-![image-20250813151803418](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813151803418.png)
+![image-20250813151803418](.\img\image-20250813151803418.png)
 
 2.
 
-![image-20250813152318667](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152318667.png)
+![image-20250813152318667](.\img\image-20250813152318667.png)
 
 3.
 
-![image-20250813152418604](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152418604.png)
+![image-20250813152418604](.\img\image-20250813152418604.png)
 
 4.
 
-![image-20250813152636299](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813152636299.png)
+![image-20250813152636299](.\img\image-20250813152636299.png)
 
 5.原仓库所有者去接收 pull requests
 
-![image-20250813155550346](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813155550346.png)
+![image-20250813155550346](.\img\image-20250813155550346.png)
 
-![image-20250813155812388](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813155812388.png)
+![image-20250813155812388](.\img\image-20250813155812388.png)
 
 6.合并代码
 
-![image-20250813160048825](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813160048825.png)
+![image-20250813160048825](.\img\image-20250813160048825.png)
 
 7.把远程库拉取到本地
 
@@ -368,11 +368,11 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDKKwyzAk2HNnyv2lghJCl8aKbvrTszd03iSGy+9cIc
 
 粘贴到github的账号设置中
 
-![image-20250813162728635](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813162728635.png)
+![image-20250813162728635](.\img\image-20250813162728635.png)
 
 设置ssh的别名
 
-![image-20250813163833129](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250813163833129.png)
+![image-20250813163833129](.\img\image-20250813163833129.png)
 
 ````sh
 $ git remote add gitDemo_ssh git@github.com:ljuyx010/gitDemo.git

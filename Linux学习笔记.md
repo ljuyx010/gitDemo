@@ -367,7 +367,7 @@ info 命令   （查询超级详细的帮组，没事别看）
 
 ## 11.Linux常用命令
 
-![image-20250718173915031](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250718173915031.png)
+![image-20250718173915031](.\img\image-20250718173915031.png)
 
 **Tab 键 自动补全**
 
@@ -1409,7 +1409,7 @@ inode号(索引号)         所有者 所属用户组 大小  修改时间  文�
 第三列数字表示硬链接数量（入口数）
 ```
 
-![image-20250724142035974](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250724142035974.png)
+![image-20250724142035974](.\img\image-20250724142035974.png)
 
 | 文件类型                |                                |
 | ----------------------- | ------------------------------ |
@@ -1572,7 +1572,7 @@ uid=0(root) gid=0(root) 组=0(root) 环境=unconfined_u:unconfined_r:unconfined_
 | /etc/group         | 用户组的信息                                               |
 | /etc/gshadow       | 用户组的密码信息                                           |
 
-![image-20250724171323238](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250724171323238.png)
+![image-20250724171323238](.\img\image-20250724171323238.png)
 
 用户的增删改查
 
@@ -1904,7 +1904,7 @@ vi 基础功能的编辑器
 
 vim   vi升级版本，更多功能
 
-![image-20250728155625881](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250728155625881.png)
+![image-20250728155625881](.\img\image-20250728155625881.png)
 
 **1）移动光标**
 
@@ -2142,7 +2142,7 @@ Linux权限，通过3个字母控制整个linux权限
 
 **权限，文件与用户的关系**
 
-![image-20250730170233565](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250730170233565.png)
+![image-20250730170233565](.\img\image-20250730170233565.png)
 
 ```sh
 # 文件与用户关系
@@ -2154,9 +2154,9 @@ Linux权限，通过3个字母控制整个linux权限
 
 ```
 
-![image-20250730170926525](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250730170926525.png)
+![image-20250730170926525](.\img\image-20250730170926525.png)
 
-![image-20250730171147300](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20250730171147300.png)
+![image-20250730171147300](.\img\image-20250730171147300.png)
 
 **阅读与使用**
 
