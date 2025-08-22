@@ -1207,6 +1207,43 @@ set1={ ele*2 for ele in range(1,5)}
 # 生成的集合是 {2,4,6,8}
 ```
 
-90
-
 ### 字典（dict）
+
+字典（dict）也是一种常用的数据类型，在其他语言中可能吧字典称为联合内存或联合数组。
+
+字典是一种映射关系，非常适合处理通过xx查询yy的需求，这里的xx我们称为key（键/关键字）,这里的yy我们称为Value（值），即key -- value的映射关系。
+
+创建一个字段，只要把逗号分隔的不同的元素，用{}括起来即可，存储的元素是一个个的**键值对**，实例：
+
+```python
+dict_a={"key":"value","key1":"value1",...}
+#通过key取出对应的value
+dict_a[key]
+```
+
+注意事项：
+
+1. 字典的key（关键字）通常是字符串或数字，value可以是任意数据类型。
+2. 字典不支持索引，会报keyError
+3. 既然字典不支持索引，所以对字典的遍历不支持while，只支持for，注意直接对字典进行遍历，遍历得到的是key
+
+```python
+dict_a={"one":1,"two":2,"three":3}
+# 三种遍历方式
+# 第一种通过key遍历
+for k in dict_a:
+    print("key:", k,"value:", dict_a[k])
+    
+# 第二种直接遍历value
+for v in dict_a.values():
+    print("value:", v)
+
+# 第三种 通过k-v遍历
+for k,v in dict_a.items():
+    print("key:", k,"value:",v)
+```
+
+4. 创建空字典可以通过{}，或者dict()
+5. 字典的key必须是唯一的，如果你指定了多个相同的key，后面的键值会覆盖前面的。
+
+92
