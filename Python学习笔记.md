@@ -1246,4 +1246,30 @@ for k,v in dict_a.items():
 4. 创建空字典可以通过{}，或者dict()
 5. 字典的key必须是唯一的，如果你指定了多个相同的key，后面的键值会覆盖前面的。
 
-92
+| 序号 | 字典常用操作                                                 |
+| ---- | ------------------------------------------------------------ |
+| 1    | len(d)：返回字典d中的项数                                    |
+| 2    | d[key]：返回d中以key为键的项，如果key不存在报keyError错      |
+| 3    | d[key]=value：将d[key]设为value，如果key已经存在，则是修改value，如果key没有存在，则是增加key-value |
+| 4    | del d[key]：将d[key]从d中移除，如果映射中不存在key则会引发keyError |
+| 5    | d.pop(key,[default])：如果key存在于字典中则将其移除并返回其值，否则返回default（会改变d）。如果default未给出且key不存在于字典中，则会引发keyError， |
+| 6    | d.keys()：返回字典所有的key                                  |
+| 7    | key in d：如果d中存在键key则返回True，否则返回False          |
+| 8    | d. clear()：移除字典中的所有元素。                           |
+
+字典生成式：
+
+内置函数zip()：可以将可迭代的对象作为参数，将对象中对应的元素打包成一个元组，返回由这些元组组成的列表。
+
+字典生成式语法：
+
+````python
+{ 字典key的表达式:字典value的表达式 for 表示key的变量，表示value的变量 in zip(可迭代对象，可迭代对象) }
+
+#实例
+books=["红楼梦","三国演义","西游记","水浒传"]
+authors=["曹雪芹","罗贯中","吴承恩","施耐庵"]
+{book:author for book,author in zip(books,authors)}
+````
+
+93
