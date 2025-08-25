@@ -1350,4 +1350,31 @@ def seq_search2(my_list,find_val):
 
 **二分查找**
 
-98
+二分查找思路：
+
+1. 将列表排序(例如：从小到大)
+2. 找到列表的中间数mid_val和find_val比较
+3. 如果mid_val >find_val,则到mid_val的左边查找；如果mid_val <find_val,则到mid_val的右边查找；如果mid_val == find_val,则找到了，直接返回对应的下标即可。
+4. 不断重复步骤3，这里就是不断的折半，使用while
+5. 如果while结束，都没有找到，说明find_val没有在列表中
+
+ ```python
+ #二分查找代码
+ num_list = [1,8,10,89,1000,1234]
+ def binary_search(my_list,find_val)：
+ 	find_index = -1
+ 	left_index,right_index=0,len(my_list)-1
+     #如果left_index小于等于right_index则可以继续查找
+     while left_index <= right_index :
+         mid_index = (eft_index+right_index)//2
+         if my_list[mid_index] > find_val:
+             right_index = mid_index - 1 #如果要找的值小于中间值，则，最右边的索引移动到中间值前一位
+         elif my_list[mid_index]<find_val:
+             left_index= mid_index + 1 #如果要找的值大于中间值，则最左边的索引移动到中间值后一位
+         else: # 相等
+             find_index = mid_index
+             break
+         return find_index
+ ```
+
+99
