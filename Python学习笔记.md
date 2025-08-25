@@ -1272,4 +1272,82 @@ authors=["曹雪芹","罗贯中","吴承恩","施耐庵"]
 {book:author for book,author in zip(books,authors)}
 ````
 
-93
+### 数据容器特定比较
+
+| 比较项           | 列表(list)               | 元组(tuple)                | 字符串(str) | 集合(set)          | 字典(dict)                          |
+| ---------------- | ------------------------ | -------------------------- | ----------- | ------------------ | ----------------------------------- |
+| 是否支持多个元素 | Y                        | Y                          | Y           | Y                  | Y                                   |
+| 元素类型         | 任意                     | 任意                       | 只支持字符  | 任意               | key：只支持字符串或数字，value:任意 |
+| 是否支持元素重复 | Y                        | Y                          | Y           | N                  | key：不能重复，value：可以重复      |
+| 是否有序         | Y                        | Y                          | Y           | N                  | 3.6前无序，3.6后开始支持有序        |
+| 是否支持索引     | Y                        | Y                          | Y           | N                  | N                                   |
+| 可修改性/可变性  | Y                        | N                          | N           | Y                  | Y                                   |
+| 使用场景         | 可修改，可重复的多个数据 | 不可修改，可重复的多个数据 | 字符串      | 不可重复的多个数据 | 通过关键字查询对应数据的需求        |
+| 定义符号         | []                       | ()                         | ""/''       | {}                 | {key:value}                         |
+
+### **list，tuple，set，dict在函数中的传参机制**
+
+![17561039847039](.\img\17561039847039.jpg)
+
+结论：
+
+1. python数据类型主要有整数int/浮点数float/字符串str/布尔值bool/列表list/元组tuple/字典dict/集合set,数据类型分为两大类，一种是可变数据类型，一种是不可变数据类型
+2. 可变数据类型：当该数据类型的变量的值发生了变化，如果他的内存地址不变，那个这个数据类型就是可变数据类型。
+   不可变数据类型：当该数据类型的变量的值发生了变化，如果它的内存地址改变了，那么这个数据类型就是不可变数据类型。
+3. 不可变的数据类型：数值类型（int，float）、布尔（bool）、字符串（str），元组（tuple）
+   可变数据类型：list（列表）、set（集合）、dict（字典）
+
+## 十二、排序和查找
+
+冒泡排序：重复的走访需要排序的元素列表，依次比较两个相邻的元素，如果顺序（从小到大或从大到小）错误就交换它们的位置。重复地进行直到没有相邻的元素需要交换，则元素列表排序完成。
+
+```python
+# 通过冒泡排序把列表元素从小到大排序
+num_list = [19,24,50,13,80]
+#定义函数，完成排序操作
+def bubble_sort(my_list):
+    #i控制循环轮数，循环轮数为元素个数-1
+    for i in range(len(my_list)-1):
+        #j控制循环次数，循环次数为循环轮数-j
+        for j in range(len(my_list)-1-i):
+            #如果前面的元素比后面的元素大，则交换位置
+            if my_ist[j] > my_list[j+1]:
+                my_ist[j], my_list[j+1] = my_ist[j+1], my_list[j]
+# 调用函数
+bubble_sort(num_list)
+```
+
+**顺序查找**
+
+```python
+#顺序查找示例
+name_list = ["白眉鹰王","金毛狮王","紫衫龙王","青翼蝠王"]
+find_name = "金毛狮王"
+
+def seq_search(my_list,find_val):
+    #如果找到就返回元素索引，否则返回-1
+    find_index = -1
+    for i in range(len(my_list)):
+        if my_list[i] == find_val:
+            find_index = i
+            break
+    else:
+        print("没有找到")
+    return find_index
+
+#调用函数
+seq_search(name_list,find_name)
+
+#查找所有的，并把所有的元素索引返回
+def seq_search2(my_list,find_val):
+    #如果找到就添加到空列表中，直到所有元素查找完
+    find_index = []
+    for i in range(len(my_list)):
+        if my_list[i] == find_val:
+            find_index.append(i)
+    return find_index
+```
+
+**二分查找**
+
+98
