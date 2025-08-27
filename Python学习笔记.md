@@ -1594,4 +1594,23 @@ p.act()
 
 ### self
 
-112
+- 在定义成员方法的参数列表中，有一个self，需要写上的，如果不写，则需要使用@staticmethod标注，否则会报错，（@staticmethod会将方法转成静态方法）
+
+- self表示当前对象本身，简单的说，那个对象调用，self就代表那个对象
+
+- 当我们通过对象调用方法时，self会隐式的传入
+- 在成员方法内，访问对象的属性/成员变量，使用self
+
+```python
+class Dog:
+    name="波斯猫"
+    age = 2
+    def info(self,name):
+        print(f"name信息:{name}") #加菲猫
+        print(f"成员变量name:{self.name}") #波斯猫
+        
+dog = Dog()
+dog.info("加菲猫")
+```
+
+113
