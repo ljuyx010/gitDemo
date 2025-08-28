@@ -3,8 +3,6 @@
 # @File    : game.py
 # @Time    : 2025/8/27 22:36
 import random
-from secrets import choice
-
 
 class Game:
     def __init__(self, name):
@@ -23,7 +21,7 @@ class Game:
         while self.loop:
             choice = int(input("请输入您的选择："))
             if choice == 0 or choice == 1 or choice == 2:
-                computer = random.randrange(0, 2)
+                computer = random.randint(0, 2)
                 self.res["computer"].append(computer)
                 self.res["choice"].append(choice)
                 if computer == choice:
@@ -39,10 +37,10 @@ class Game:
                 print("输入错误，请输入正确数字")
 
         print("比赛结果如下：")
-        print(self.name, "电脑", "玩家")
-        for i in self.res["choice"]:
-            print(self.res["choice"][i], self.res["computer"][i], self.res["win"][i])
-
-#测试游戏
+        print(self.name, "电脑", "结果")
+        for i in range(len(self.res["choice"])):
+            # print(i, self.res["choice"][i])
+            print(f" {self.res["choice"][i]} \t {self.res["computer"][i]} \t {self.res["win"][i]}")
+#测试游戏1
 game = Game("龙哥")
 game.play()
