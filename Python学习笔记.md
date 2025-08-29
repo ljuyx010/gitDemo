@@ -1757,6 +1757,159 @@ print(f"job={clerk.__job}") #所以结果可以正常输出
              print(ele)
      ```
    
-     127
+     - 变量类型注解
+       格式`变量:类型`
+     
+     -  实例对象类型注解
+       格式`对象名称:类名`
+     
+     - 容器类型注解
+       格式`容器名:容器类型`
+     
+     - 容器详细类型注解
+       格式`容器名:容器类型[元素类型]`
+     
+       ```python
+       # 容器详细类型注解示例
+       my_list2:list[int] = [100,200,300]
+       my_tuple2:tuple[str,str,str,float] = ("run","sing","dance",2.5)
+       my_set:set[str] = {"jack","tim","john"}
+       my_dict:dict[str,int] = {"no1":100,"no2":200}
+       ```
+     
+     - 在注释中使用注解
+       格式`# type:类型`
+     
+     - 函数（方法）的类型注解
+     
+       基本语法
+     
+       ```python
+       def 函数/方法名(形参名:类型,形参名:类型...)->返回值类型:
+           函数/方法体
+       ```
+     
+       类型注解是提示性的，并不是强制性的，如果你给的类型和指定/标注的类型不一致，pycharm检测到会给出黄色警告，但是仍然可以运行
+     
+     - union类型注解
+       union类型可以定义联合类型注解
+       在变量、函数（方法）都可以使用union联合类型注解
+       使用时，需要先导入Union：`from typing import Union`
+       基本语法：`Union[类型,类型...]`
+     
+       ```python
+       from typing import Union
+       a:Union[int,float] = 100
+       # Union[int,float] 等价于 int|float，意味着int或float都可以
+       my_list:list[Union[int,str,float]] = [100,200,'jack','tom',9.6]
+       ```
+     
+       
    
 3. **多态**
+   多态顾名思义即多种状态，不同的对象调用相同的方法，表现出不同的状态，成为多态
+   多态通常作用在继承关系上
+   解读：一个父类，具有多个子类，不同的子类对象调用相同的方法，执行的时候产生不同的状态，就是多态
+   多态特点：
+   python中函数/方法的参数是没有类型现在的，所以多态在python中的体现并不是很严谨
+   python并不要求严格的继承体系，关注的不是对象的类型本身，而是它是否具有要调用的方法（行为）
+
+```python
+class Aa:
+    def hi():
+        print("Aa say hello")
+     
+class Bb:
+    def hi():
+        print("Bb say hello")
+        
+def fun(obj):
+    obj.hi()
+    
+a = Aa()
+b = Bb()
+
+fun(a)  #此时程序是可以执行成功的，只要a对象的类有hi方法即可
+fun(b)
+
+```
+
+**isinstance函数**
+
+isinstance()用于判断对象是否为某个类或其子类的对象
+基本语法：`isinstance(object,classinfo)`object:对象，classinfo：可以是类名，基本类型或者由它们组成的元组
+
+```python
+num = 9
+# 表示num是否是int类或int子类的对象
+print(f"num 是不是int：{insinstance(num, int)}") #True 
+print(f"num 是不是int：{insinstance(num, str)}") #False
+print(f"num 是不是int/str/list：{insinstance(num, (int,str,list))}") #True
+```
+
+当调用对象成员的时候，会和对象本身动态关联
+
+```python
+class A:
+    i = 10
+    def sum(self):
+        return self.i += 10
+    def sum1(self):
+        return self.getI() += 10
+    def getI(self):
+        return self.i
+class B(A):
+    i = 20
+    def getI(self):
+        return self.i
+num = B()
+num.sum() #num是B类的对象，运行sum方法，B类中没有就到父类A中去找，此时sum(self)中的self动态绑定的就是B类，并不是A类，所以结果是30
+num.sum1() #同理，sum1(self)中的self也是B类，所以下面的getI(self)是调用B类的方法，结果也是30
+```
+
+**魔术方法**
+
+在python中，所有以`__`包起来的方法，统称为Magic Method（魔术方法）,它是一种特殊的方法，普通方法需要调用，而魔术方法不需要调用就可以自动执行。
+
+魔术方法在类或对象的某些事件发生时会自动执行，让类具有神奇的“魔力”，如果希望根据自己的程序定制特殊功能的类，那么就需要对这些方法进行重写。
+
+python中常用的运算符，for循环，以及类操作等都是运行在魔术方法之上的
+
+| 常用魔术方法         | 操作                                           |
+| -------------------- | ---------------------------------------------- |
+| `__init__`           | 初始化对象的成员                               |
+| `__str__(self)`      | 定义对象转字符串行为：print(对象)或者str(对象) |
+| `__eq__(self,other)` | 定义等于号的行为:x==y                          |
+| `__lt__(self,other)` | 定义小于号的行为:x<y                           |
+| `__le__(self,other)` | 定义校友等于号的行为:x<=y                      |
+| `__ne__(self,other)` | 定义不等号的行为:x!=y                          |
+| `__gt__(self,other)` | 定义大于号的行为:x>y                           |
+| `__ge__(self,other)` | 定义大于等于号的行为:x>=y                      |
+
+```python
+#重写 __eq__魔术方法示例：
+class Person:
+    def __init__(self,name,age,gender):
+        self.name = name
+        self.age = age
+        self.gender = gender
+     #3.重写__eq__魔术方法
+    def __eq__(self,other):
+        #首先判断other和self是否是同一个类
+        if isinstance(other,Person):
+            #再比较内容是否相同，这样更为合理
+       		 return (self.name == other.name and 
+                self.age == other.age and 
+                self.gender == other.gender)
+         return False
+    
+p1=Person('smith',20,'man')
+p2=Person('smith',20,'man')
+print(f"p1 == p2:{p1==p2}") # 1.两个对象比较其实是比较两个对象的内存地址是否是相等
+#2.目前的需求是想知道两个对象的属性是否是一样的，那就需要重写__eq__魔术方法
+#4.重写魔术方法后再比较就是True了
+```
+
+### class对象和静态方法
+
+133
