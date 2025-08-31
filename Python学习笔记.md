@@ -1912,4 +1912,54 @@ print(f"p1 == p2:{p1==p2}") # 1.两个对象比较其实是比较两个对象的
 
 ### class对象和静态方法
 
-133
+类本身也是对象，即class对象。
+
+通过类名调用非静态成员方法
+
+```python
+类名.非静态方法(类对象)
+```
+
+一个普通方法使用@staticmethod将转换成静态方法，静态方法不会接收隐式的第一个参数，要声明一个静态方法，语法：
+```python
+class C:
+    @staticmethod
+    def f(arg1,arg2,argN):
+        ....
+```
+
+静态方法既可以由类调用（如C.f()）,也可以由实例中调用（如C().f()）。
+
+### 抽象类
+
+默认情况下，python不提供抽象类，python附带一个模块，该模块为定义抽象类提供了基础，该模块名为abc
+
+当我们需要抽象基类时，让类继承ABC(abc模块的ABC类)，使用@abstractmethod声明抽象方法（@abstractmethod用于声明抽象方法的装饰器，在abc模块中），那么这个类就是抽象类
+
+抽象类的价值更多作用是在于设计，是设计者设计好后，让子类继承并实现抽象类的抽象方法 
+
+```python
+form abc import ABC,abstractmethod
+class Aminal(ABC): #抽象类需要继承ABC类
+    @abstractmethod
+    def cry(self): #抽象方法需要@abstractmethod装饰器
+        pass
+    
+class Tiger(Aminal): # 继承抽象类的类来实现具体的功能
+    def cry(self):
+        print("老虎 嗷嗷叫...")
+        
+tiger = Tiger() #实例化Tiger类
+tiger.cry() #调用cry方法
+```
+
+
+
+注意：
+
+1. 抽象类（含有抽象方法），不能实例化
+2. 抽象类需要继承ABC，并且需要至少一个抽象方法
+3. 抽象类中可以有普通方法
+4. 如果一个类继承了抽象类，则它必须实现抽象类的所有抽象方法，否则它仍然是一个抽象类
+
+139
