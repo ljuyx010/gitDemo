@@ -47,10 +47,10 @@ def add_house():
 
 def find_house():
     print("查找房屋信息".center(20, '='))
-    id = int(input("请输入房屋信息的id(-1退出):"))
-    if id == -1:
+    h_id = int(input("请输入房屋信息的id(-1退出):"))
+    if h_id == -1:
         return
-    house = find_by_id(id)
+    house = find_by_id(h_id)
     if house:
         print("ID\t房主\t电话\t地址\t租金\t状态")
         for value in house.values():
@@ -67,10 +67,10 @@ def find_house():
 
 def del_house():
     print("删除房屋信息".center(20, '='))
-    id = int(input("请输入要删除房屋信息的id(-1退出):"))
-    if id == -1:
+    h_id = int(input("请输入要删除房屋信息的id(-1退出):"))
+    if h_id == -1:
         return
-    house = find_by_id(id)
+    house = find_by_id(h_id)
     if house:
         choice = confirm_enter()
         if choice == 'y':
@@ -111,6 +111,7 @@ def find_by_id(find_id):
     for house in list_houses:
         if house['id'] == find_id:
             return house
+    return None
 
 
 """
@@ -134,7 +135,7 @@ def list_house():
 """
 
 
-def exit():
+def sys_exit():
     print("退出程序".center(20, '='))
     choice = confirm_enter()
     if choice == 'y':

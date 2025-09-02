@@ -21,7 +21,7 @@ def main():
         elif key == '5':
             menu.list_house()
         elif key == '6':
-            if menu.exit() :
+            if menu.sys_exit():
                 break
 
 if __name__ == '__main__':

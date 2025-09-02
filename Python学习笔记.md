@@ -1984,9 +1984,13 @@ tiger.cry() #调用cry方法
 ```python
 try:
     可能出现异常的代码
-except Exception:
+except [Exception as 别名]:
     #捕获异常，如果上面的代码出现异常就会进入此代码块，程序开发者可以根据自己的需求处理异常
     #处理完后，代码继续往下执行，不至于使程序中断
+[else:]
+	#可选，没有发生异常，执行的代码
+[finally:]
+	#可选，不管有没有异常，都要执行的代码
 ```
 
 ### 常见异常
@@ -2000,4 +2004,45 @@ except Exception:
 7. FileNotFoundError：请求的文件或目录不存在时将被引发
 8. AttributeError：当属性引用或赋值失败时将被引发
 
-155
+异常注意细节：
+
+1.如果异常发生了，则异常发生后面的代码不会执行，直接进入except子句
+
+```python
+num1 - 10
+num2 = 0
+try:
+    res = num1 / num2  #此次触发异常
+    print("hi....")  #此次不会执行，直接跳到捕获异常
+except Exception as e:
+    print(f"出现了异常 异常信息->{e}") #输出异常处理
+    
+print("继续执行...") #异常捕获后继续执行其他的语句
+```
+
+2.如果未发生异常，则执行try的代码块，不会进入到except子句
+
+3.如果希望没有发生异常是，要执行某段代码，则使用else子句
+
+4.如果希望不管是否发生异常，都执行某段代码（比如关闭连接，释放资源等）则使用finally子句
+
+5.可以有多个except子句，捕获不同的异常（进行不同的业务处理），如果发生异常，只会匹配一个except，建议吧具体的异常写在前面，基类异常在后比如（IndexError在前，Exception在后），这样当具体异常匹配不到时，再由基类异常匹配
+
+6.一个except子句，也可以捕获不同的异常
+
+```python
+# 通过异常来做数据验证
+a = 0
+while True:
+    try:
+        a = int(input("请输入年龄:"))
+        break
+     except Exception as e:
+        print("你输入的不是整数，请重新输入")
+        
+print(f"您输入的年龄是{a}")
+```
+
+
+
+157
