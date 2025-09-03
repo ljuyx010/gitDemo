@@ -2114,4 +2114,40 @@ I/O类型：
 | 8    | f.close()：刷新并关闭此流。即可释放文件占用的系统资源，如果文件已关闭，此方法无效。文件关闭后，对文件的任何操作都会引发ValueError |
 | 9    | with open() as f：在处理文件对象时，最好使用with关键字。优点是，子句体结束后，文件会自动关闭 |
 
-163
+`open(file,mode="w",enconding="utf-8")` `mode="w"`打开文件，如果文件不存在，会创建，如果文件已经存在，会先截断打开的文件，也就是清空文件内容。
+
+如果我们希望以追加的方式写入，需要`mode='a'`
+
+### 目录操作
+
+`os.path.exists(file)`判断file是否存在
+
+`os.remove(file)`删除文件
+
+`os.mkdir(path)`创建单级目录
+
+`os.mkdirs(path)`递归创建多级目录
+
+`os.rmdir(path)`删除目录
+
+`os.removedirs(path)`递归删除多级目录
+
+`os.path.isdir(path)`判断目录是否存在
+
+`os.stat(path)`获取文件或文件描述符的状态，返回一个stat_result对象
+
+目录操作的注意事项：
+
+1.f.flush():刷新流的写入缓冲区到文件
+
+- 调用f.wirte()，内容并没有真正写入到文件，而是先积攒到缓存区
+- 当调用flush()时，内容会真正写入到文件
+- 这样是为了避免频繁的操作硬盘，导致效率低（积攒一定量的数据，一次性写入文件，提高效率）
+
+2.f.close()：刷新并关闭此流，也就是f.close()内置的flush功能
+
+3.`with open() as f:`在处理文件对象时，子句结束后，文件会自动关闭
+
+4.关于目录分隔符号，在windows下`/`和`//`都可以，比如`d://aaa//bbb//hi.txt`和`d:/aaa/bbb/hi.txt`，linux/unix是`/`比如`/roor/home/aa.log`因此建议目录分隔符，为了兼容linux和windows都使用`/`
+
+166
