@@ -2150,4 +2150,10 @@ I/O类型：
 
 4.关于目录分隔符号，在windows下`/`和`//`都可以，比如`d://aaa//bbb//hi.txt`和`d:/aaa/bbb/hi.txt`，linux/unix是`/`比如`/roor/home/aa.log`因此建议目录分隔符，为了兼容linux和windows都使用`/`
 
-168
+### pyecharts
+
+文档地址：https://pyecharts.org/#/zh-cn/intro
+
+实例文档地址：https://gallery.pyecharts.org/#/README
+
+171
