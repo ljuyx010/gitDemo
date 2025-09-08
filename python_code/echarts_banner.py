@@ -19,6 +19,8 @@ for i in range(5):
 # 最终有用的数据
 all_year = file_data.pop(0).replace("\n", "").split(',')
 all_year.pop(0)
+# 年份逆序
+all_year.reverse()
 # 组合年份城市数据{"2005年":[["北京",655],["上海",354]...]}
 rank_data = {}
 # print(file_data)
@@ -26,19 +28,16 @@ k = 0
 for year in all_year:
     if year not in list(rank_data):
         rank_data[year] = []
-    k += 1
     for line in file_data:
         line = line.replace("\n", "").split(',')
-        rank_data[year].append([line[0], int(line[k])])
-# y轴数据排序
-for year in list(rank_data):
-    rank_data[year] = sorted(rank_data[year], key=lambda x: x[1], reverse=True)
-    # 切片只保留12个
-    rank_data[year] = rank_data[year][0:12]
+        # 数据也要同年份一样逆序
+        line.reverse()
+        # 从最后一位取出地区，再按循环的顺序取出每年的数据
+        rank_data[year].append([line[-1], int(line[k])])
+    k += 1
 # y_data = dict(sorted(y_data.items(), key=lambda item: item[1], reverse=True))
 # print(rank_data)
-# 年份逆序
-all_year.reverse()
+
 # 遍历年份，创建bar对象
 # 创建时间轴对象
 tl = Timeline({"theme":ThemeType.ESSOS})
@@ -47,7 +46,11 @@ for year in all_year:
     x_data = []
     # 定义bar的Y轴数据
     y_data = []
-    for item in rank_data[year]:
+    # 对数据进行从大到小排序
+    rank_data[year].sort(key=lambda x: x[1], reverse=True)
+    # 切片只保留12个
+    line_data = rank_data[year][0:12]
+    for item in line_data:
         # print(item)
         x_data.append(item[0])
         y_data.append(item[1])

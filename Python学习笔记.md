@@ -2156,4 +2156,61 @@ I/O类型：
 
 实例文档地址：https://gallery.pyecharts.org/#/README
 
-174
+## 网络处理urllib
+
+urllib用于处理网络访问的包，常用方法urllib.request
+
+获取页面信息`response = urllib.request.openurl(url,[data],[timeout, ]*, context=None)`返回的对象可以用`response.header`返回头，`response.status`返回状态，`response.info`返回信息，`response.read()`读取返回的内容等。
+
+模拟人操作网络，隐藏python处理网络可以有两个方法
+
+- 通过Request的headers参数修改
+
+  ```python
+  headers={}
+  # 模拟浏览器的参数
+  headers['User-Agent']="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36"
+  # 对URL发送带data（application/x-www-form-urlencoded格式）参数的post请求
+  response = urllib.request.Request(url, data=None, header, origin_req_host=None, unverifiable=False, method=None)
+  ```
+
+- 通过request.add_header()方法修改
+
+  ```python
+  req = urllib.request.Request(url,data)
+  # 动态添加header
+  req.add_header('User-Agent',"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36")
+  ```
+
+修改了默认的Request方法后再调用urllib.request.openurl()即可。
+
+```python
+# 模拟浏览器访问url 实例
+import urllib
+request = urllib.request.Request('http://chaipip.com')
+request.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36')
+response = urllib.request.urlopen(request)
+html = response.read().decode('utf-8')
+print(html)
+```
+
+
+
+### 代理
+
+防止网络请求频繁被请求的服务器封禁我们的ip可以使用代理来更换不同ip来访问。
+
+步骤：
+
+1. 创建一个字段参数{"类型":"代理ip:端口号"}，配置代理服务器`proxy_support = urllib.request.ProxyHandler({})`
+
+2. 定制、创建一个带代理的opener
+   `opener = urllib.request.build_opener(proxy_support)`
+
+3. 安装opener
+   `urllib.request.install_opener(opener)`
+
+4. 调用opener访问url
+   `opener.open(url)`
+
+   
