@@ -2120,19 +2120,21 @@ I/O类型：
 
 ### 目录操作
 
-`os.path.exists(file)`判断file是否存在
+`os.path.exists(file)`判断文件或目录是否存在
 
 `os.remove(file)`删除文件
 
 `os.mkdir(path)`创建单级目录
 
-`os.mkdirs(path)`递归创建多级目录
+`os.makedirs(path)`递归创建多级目录
 
 `os.rmdir(path)`删除目录
 
 `os.removedirs(path)`递归删除多级目录
 
 `os.path.isdir(path)`判断目录是否存在
+
+`os.path.rename(path)`重命名给定的文件或目录
 
 `os.stat(path)`获取文件或文件描述符的状态，返回一个stat_result对象
 
@@ -2214,3 +2216,34 @@ print(html)
    `opener.open(url)`
 
    
+
+## Scrapy爬虫框架
+
+使用scrapy抓取一个网站一共需要四个步骤：
+
+- 创建一个scrapy项目
+
+  ```python
+  # 命令行运行命令
+  scrapy startproject <项目名称>
+  
+  #测试爬取
+  scrapy crawl <spider名>
+  
+  # 保存爬虫数据到本地
+  scrapy crawl jjwxc -o items.json -t json
+  ```
+
+  
+
+- 定义item容器
+  xpath()：xpath表达式获取节点列表
+  css()：css表达式获取节点列表
+  extract()：序列化节点为Unicode字符串并返回list
+  re()：根据正则表达式对数据提取，并返回Unicode字符串列表
+
+- 编写爬虫
+
+- 存储内容
+
+65
