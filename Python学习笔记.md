@@ -2246,4 +2246,89 @@ print(html)
 
 - 存储内容
 
-65
+## tkinter窗口界面
+
+### Label文本标签
+
+```python
+photo = PhotoImage(file="yezi.png")
+#compound 参数是 Tkinter Label 组件中一个非常实用的功能，它控制文本和图像的组合显示方式。
+image_label = Label(frame1, textvariable=var, image=photo,compound=CENTER,font=("隶书",18),fg="#666")
+image_label.pack(side=TOP)
+```
+
+tkinter三种布局方式的区别
+
+### pack() - 打包布局
+
+- **简单自动**：按照添加顺序自动排列
+- **单方向布局**：主要沿一个方向（垂直或水平）排列
+- **适合简单界面**：快速开发简单的布局
+
+**pack()参数：**
+
+- `side`：排列方向（TOP, BOTTOM, LEFT, RIGHT）
+- `fill`：填充方式（X, Y, BOTH, NONE）
+- `expand`：是否扩展剩余空间
+- `anchor`：对齐方式
+- `padx`, `pady`：外部间距
+
+### grid() - 网格布局
+
+- **表格结构**：基于行和列的网格系统
+- **精确控制**：可以精确控制每个组件的位置
+- **适合复杂表单**：表单、表格、仪表板等
+
+**grid()参数：**
+
+- `row`, `column`：行列位置
+- `rowspan`, `columnspan`：跨行跨列
+- `sticky`：组件在单元格内的对齐
+- `padx`, `pady`：外部间距
+
+### place() - 绝对定位
+
+- **精确像素定位**：使用绝对坐标或相对位置
+- **完全控制**：可以精确控制每个像素位置
+- **不适合响应式**：固定位置，不适应窗口大小变化
+
+**place()参数：**
+
+- `x`, `y`：绝对坐标
+- `relx`, `rely`：相对位置（0.0-1.0）
+- `anchor`：锚点位置
+- `width`, `height`：指定大小
+
+**三者比较对比**
+
+| 特性         | pack()       | grid()       | place()  |
+| :----------- | :----------- | :----------- | :------- |
+| **布局方式** | 自动流式布局 | 网格表格布局 | 绝对定位 |
+| **复杂度**   | 简单         | 中等         | 复杂     |
+| **控制精度** | 低           | 高           | 非常高   |
+| **响应式**   | 好           | 很好         | 差       |
+| **适用场景** | 简单界面     | 表单、表格   | 特殊效果 |
+| **性能**     | 好           | 好           | 一般     |
+
+### Entry输入框组件
+
+```python
+# 输入框组件 textvariable 绑定变量，可以输入的内容直接传给变量
+var = StringVar()
+e = Entry(frame1,textvariable = var)
+e.pack(anchor="center",padx=5,pady=5)
+e.insert(0,"默认文本...")
+e.delete(0,END) #删除输入框中所有的字符
+```
+
+```python
+e = Entry(frame1,validata = "all",validatacommand=fun,invalidcommand=fun2)
+# validata = "None" 关闭输入验证，
+#开启输入验证的几种验证方式： focus 获得或失去焦点验证，focusin 获得焦点验证，focusout 失去焦点验证，key 编辑时验证，all 所有情况都验证
+# validatacommand 绑定验证函数，验证函数只能返回Ture或False
+# 获取输入框的内容使用：e.get() 或者 textvariable绑定的变量
+# 当validatacommand 返回False时，会调用invalidcommand绑定的函数，即验证不通过时执行
+# state可以设置组件的状态：NORMAL（正常），DISABLED（禁用）或‘readonly’（只读）
+```
+
+70
