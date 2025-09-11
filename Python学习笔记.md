@@ -2248,7 +2248,7 @@ print(html)
 
 ## tkinter窗口界面
 
-### Label文本标签
+### Label文本标签组件
 
 ```python
 photo = PhotoImage(file="yezi.png")
@@ -2331,4 +2331,51 @@ e = Entry(frame1,validata = "all",validatacommand=fun,invalidcommand=fun2)
 # state可以设置组件的状态：NORMAL（正常），DISABLED（禁用）或‘readonly’（只读）
 ```
 
-70
+### text组件
+
+
+window_create() 是 Text 组件的一个方法，用于在文本中嵌入其他组件（如按钮、输入框、标签等）
+主要参数详解
+1. index - 插入位置
+text.window_create("1.0", window=widget)      # 开头
+text.window_create(END, window=widget)        # 结尾
+text.window_create("2.5", window=widget)      # 第2行第5个字符
+2. window - 要嵌入的组件
+必须属于同一个 Text 组件
+button = Button(text_widget, text="按钮")
+text_widget.window_create(END, window=button)
+3. align - 对齐方式
+text.window_create(END, window=widget, align="top")     # 顶部对齐
+text.window_create(END, window=widget, align="center")  # 居中对齐
+text.window_create(END, window=widget, align="bottom")  # 底部对齐
+4. padx, pady - 间距
+text.window_create(END, window=widget, padx=10, pady=5)
+
+### Canvas画布组件
+
+Canvas组件支持对象：
+
+- arc （弧形，弦或扇形）style属性PIESLICE（扇形），CHORD（弓形），ARC（弧形）
+- bitmap（内建的位图文件或XBM格式的文件）
+- image（BitmapImage或PhotoImage的实例对象）
+- line（线）
+- oval（圆或椭圆）
+- polygon（多边形）
+- rectangle（矩形）
+- text（文本）
+- window（组件）
+
+Canvas组件提供几种方法让你指定画布对象：
+
+- Item handles （指定画布对象的id）
+- Tags （画布对象附件标签）
+- ALL  （Canvas组件中的所有画布对象）
+- CURRENT （鼠标指针下的当前画布对象）
+
+### menu组件
+
+Optionmeu(lable="XX",*args) 形参带\*表示打包，意思是参数不确定个数打包成一个列表，\*\*表示把不确定个数成形参打包成一个元组
+
+同样的在实参中\*就表示解包，传入的实参是一个列表，前面带一个\*就会自动解包传入，如果传入的实参是个元组就在前面加\*\*就可以实现自动解包。
+
+74

@@ -3,7 +3,7 @@
 # @File    : tk_input.py
 # @Time    : 2025/9/10 14:43
 from tkinter import *
-
+import webbrowser
 from attr.setters import validate
 
 
@@ -100,5 +100,24 @@ text.window_create(END, window=widget, padx=10, pady=5)
 """
 text.window_create("1.0",window=b1,align=TOP)
 photo = PhotoImage(file="yezi.png")
+text.insert(INSERT,"这是测试tags标签的一段话")
+# 给1.1-2.2（第一行，第1个字到第二行，第2个字）和第2行第7个字绑定标签tag1
+text.tag_add("tag1",1.1,"2.2","2.7")
+# 设置标签tag1的样式
+text.tag_config("tag1",foreground="red",background="yellow",font=("宋体",20,"bold"))
+# 选中事件
+def show_hand_cursor(event):
+    text.config(cursor="arrow")
+# 离开事件
+def show_out_cursor(event):
+    text.config(cursor="xterm")
+# 点击事件
+def click(event):
+    # 浏览器打开网页
+    webbrowser.open("http://www.starsoft.work")
 
+# 给标签绑定方法
+text.tag_bind("tag1",'<Enter>',show_hand_cursor)
+text.tag_bind("tag1",'<Leave>',show_out_cursor)
+text.tag_bind("tag1",'<Button-1>',click)
 mainloop()
