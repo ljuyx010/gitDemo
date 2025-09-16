@@ -721,4 +721,76 @@ arr2[0] = 40;
 //此时为数组拷贝，改变arr2[0]的值，不影响arr1
 ```
 
-168
+数组添加
+
+```java
+int[] arr = {1,2,3};
+//给数字添加元素使用其他语言的arr[3]=4这种方法是不行的
+//应该使用下面的方法
+int[] arrNew = new int[arr.length+1];
+//遍历arr数组，依次将元素拷贝得arrNew数组
+for(int i=0;i<arr.length;i++){
+    arrNew[i] = arr[i];
+}
+//把4赋给arrNew最后一个元素 
+arrNew[arrNew.length-1] = 4;
+//让arr指向arrNew
+arr = arrNew;
+```
+
+#### 排序
+
+排序是将多个数据，依指定的顺序进行排列的过程。
+
+1.内部排序
+将需要处理的所有数据都加载到内存中进行排序。包括（交换式排序法、旋转式排序法和插入式排序法）
+
+2.外部排序
+
+数据量过大，无法全部加载到内存中，需要借助外部存储进行排序。包括（合并排序法和直接合并排序法）
+
+冒泡排序实例
+
+```java
+int[] arr ={24,69,80,57,13};
+//外层循环控制循环轮数
+for(int i=arr.length-1;i>0;i--){
+    //内层循环每轮的次数
+    for(int j=0; j<i; j++){
+        if(arr[j]>arr[j+1]){
+            temp=arr[j];
+            arr[j]=arr[j+1];
+            arr[j+1]=temp;
+        }
+    }
+}
+
+```
+
+字符串的比较使用`equals()`函数
+
+```java
+String a = "金毛狮王";
+if(a.equals("白眉鹰王")){
+    System.out.print('字符串一样');
+}else{
+    System.out.print('字符串不一样');
+}
+```
+
+#### 二维数组
+
+int\[][] 来标识二维数组
+
+```java
+int[][] arr = {{0,0,0,0,0},{0,1,0,0,0},{2,0,3,0,0}};
+//遍历二维数组
+for(int i=0;i<arr.length;i++){
+    for(int j=0;j<arr[i].length;j++){
+        System.out.print(arr[i][j]+" ");
+    }
+    System.out.println();
+}
+```
+
+176
