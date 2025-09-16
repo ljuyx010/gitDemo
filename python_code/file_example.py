@@ -10,11 +10,11 @@ dir = os.path.isdir(path)
 # print(dir)
 
 # 获取文件夹下的文件方法1 获取文件及其属性
-# with os.scandir(path) as it:
-#     for entry in it:
-#         print(entry.name, entry.path,entry.stat(), entry.stat().st_size)
+with os.scandir(path) as it:
+    for entry in it:
+        print(entry.name, entry.path,entry.is_dir(),entry.stat(), entry.stat().st_size)
 
 # 方法2 只能获取文件名
-listdir = os.listdir(path)
-for item in listdir:
-    print(item)
+# listdir = os.listdir(path)
+# for item in listdir:
+#     print(item)
