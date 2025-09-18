@@ -13,6 +13,7 @@ class MyFrame(wx.Frame):
     file_path = None
     weight = 800
     height = None
+    quality = 1
     layout = 1
     save = 5
     image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.webp', '.svg'}
@@ -50,6 +51,10 @@ class MyFrame(wx.Frame):
                 else:
                     wx.MessageBox("不能选择包含中文的路径","警告")
             # print(self.file_path)
+
+    def on_list_select(self,event):
+        self.quality = event.GetEventObject().GetSelection()
+        # print(self.quality,type(self.quality))
 
     # 填写验证，判断是否数字
     def is_number(self,event):
@@ -173,12 +178,23 @@ class MyFrame(wx.Frame):
             output = f['path'] + f['name']
             # 判断输出文件格式并输出
             if self.layout == 2:
+                # 选择输出格式为jpg
                 output += '.jpg'
-                cv2.imwrite(output, resized_image, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                cv2.imwrite(output, resized_image, [cv2.IMWRITE_JPEG_QUALITY, 100-self.quality*10])
             elif self.layout == 3:
+                # 选择输出格式为png
                 output += '.png'
-                cv2.imwrite(output, resized_image, [cv2.IMWRITE_PNG_COMPRESSION, 2])
+                cv2.imwrite(output, resized_image, [cv2.IMWRITE_PNG_COMPRESSION, self.quality])
+            elif f['ext'] == '.jpg':
+                # 选择原格式输出但格式为jpg
+                output += f['ext']
+                cv2.imwrite(output, resized_image, [cv2.IMWRITE_JPEG_QUALITY, 100 - self.quality * 10])
+            elif f['ext'] == '.png':
+                # 选择原格式输出但格式为png
+                output += f['ext']
+                cv2.imwrite(output, resized_image, [cv2.IMWRITE_PNG_COMPRESSION, self.quality])
             else:
+                # 选择原格式输出的其他格式
                 output += f['ext']
                 cv2.imwrite(output, resized_image)
             count += 1
@@ -211,12 +227,15 @@ class MyFrame(wx.Frame):
         # 处理尺寸
         statictext2 = wx.StaticText(self.panel,label="压缩尺寸")
         statictext2.SetFont(titleFont)
-        marktext = wx.StaticText(self.panel,
-        label="说明：只填写宽度,则宽度固定高度等比缩放，只填写高度则宽度等比缩放，宽高都填写则等比后居中裁切")
+        marktext = wx.StaticText(self.panel, label="说明：只填写宽度,则宽度固定高度等比缩放，只填写高度则宽度等比缩放，宽高都填写则等比后居中裁切")
+        marktexq = wx.StaticText(self.panel, label="画质压缩：0不压缩（数值越大压缩越多，画质可能会模糊，图片体积越小）")
         marktext.SetFont(wx.Font(9,wx.FONTFAMILY_SCRIPT, wx.NORMAL, wx.NORMAL))
+        marktexq.SetFont(wx.Font(9,wx.FONTFAMILY_SCRIPT, wx.NORMAL, wx.NORMAL))
         marktext.SetForegroundColour("#888")
+        marktexq.SetForegroundColour("#888")
         vbox.Add(statictext2,flag=wx.ALIGN_LEFT|wx.LEFT,border=10)
-        vbox.Add(marktext,flag=wx.CENTER|wx.LEFT,border=10)
+        vbox.Add(marktext, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
+        vbox.Add(marktexq,flag=wx.ALIGN_LEFT|wx.LEFT,border=10)
         hbox2 = wx.BoxSizer(wx.HORIZONTAL)
         statictextW = wx.StaticText(self.panel,label="宽度(像素)：")
         hbox2.Add(statictextW,proportion=1, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.ALL,border=10)
@@ -224,14 +243,20 @@ class MyFrame(wx.Frame):
         inputW.SetValue(str(self.weight))
         inputW.Bind(wx.EVT_KEY_UP,self.is_number)
         inputW.Bind(wx.EVT_LEAVE_WINDOW,self.set_var)
-        hbox2.Add(inputW, proportion=2, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
+        hbox2.Add(inputW, proportion=1, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
         statictextH = wx.StaticText(self.panel,label="高度(像素)：")
         hbox2.Add(statictextH, proportion=1, flag=wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=10)
         inputH = wx.TextCtrl(self.panel,id=11)
-        # inputH.SetValue(self.height)
         inputH.Bind(wx.EVT_KEY_UP,self.is_number)
         inputH.Bind(wx.EVT_LEAVE_WINDOW, self.set_var)
-        hbox2.Add(inputH, proportion=2, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
+        hbox2.Add(inputH, proportion=1, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
+        # 画质
+        statictextz = wx.StaticText(self.panel, label="画质压缩：")
+        listbox = wx.ComboBox(self.panel, choices=[str(i) for i in range(10)], style=wx.CB_READONLY)
+        listbox.SetSelection(1)
+        listbox.Bind(wx.EVT_COMBOBOX, self.on_list_select)
+        hbox2.Add(statictextz, proportion=1, flag=wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=10)
+        hbox2.Add(listbox, proportion=1, flag=wx.ALIGN_LEFT | wx.ALL, border=10)
         vbox.Add(hbox2,flag=wx.CENTER,border=10)
         # 保存格式
         statictext3 = wx.StaticText(self.panel,label="保存格式")
@@ -243,9 +268,9 @@ class MyFrame(wx.Frame):
         radio_ButtonP = wx.RadioButton(self.panel,id=3,label="PNG")
         radio_ButtonY.Bind(wx.EVT_RADIOBUTTON,self.on_radio_layout)
         self.Bind(wx.EVT_RADIOBUTTON,self.on_radio_layout,id=2,id2=3)
-        hbox3.Add(radio_ButtonY,proportion=1,flag=wx.CENTER|wx.ALL,border=10)
-        hbox3.Add(radio_ButtonJ,proportion=1,flag=wx.CENTER|wx.ALL,border=10)
-        hbox3.Add(radio_ButtonP,proportion=1,flag=wx.CENTER|wx.ALL,border=10)
+        hbox3.Add(radio_ButtonY,proportion=1,flag=wx.CENTER|wx.LEFT|wx.BOTTOM,border=10)
+        hbox3.Add(radio_ButtonJ,proportion=1,flag=wx.CENTER|wx.LEFT|wx.BOTTOM,border=10)
+        hbox3.Add(radio_ButtonP,proportion=1,flag=wx.CENTER|wx.LEFT|wx.BOTTOM,border=10)
         vbox.Add(hbox3,flag=wx.ALIGN_LEFT,border=10)
         # 保存方式
         statictext4 = wx.StaticText(self.panel,label="保存方式",style=wx.ALIGN_LEFT)
@@ -256,8 +281,8 @@ class MyFrame(wx.Frame):
         radio_ButtonN = wx.RadioButton(self.panel, id=5, label="原位另存")
         radio_ButtonN.SetValue(True)
         self.Bind(wx.EVT_RADIOBUTTON, self.on_radio_save, id=4, id2=5)
-        hbox4.Add(radio_ButtonO,proportion=1,flag=wx.CENTER|wx.ALL,border=10)
-        hbox4.Add(radio_ButtonN,proportion=1,flag=wx.CENTER|wx.ALL,border=10)
+        hbox4.Add(radio_ButtonO,proportion=1,flag=wx.CENTER|wx.LEFT|wx.BOTTOM,border=10)
+        hbox4.Add(radio_ButtonN,proportion=1,flag=wx.CENTER|wx.LEFT|wx.BOTTOM,border=10)
         vbox.Add(hbox4,flag=wx.ALIGN_LEFT,border=10)
         # 处理按钮
         hbox5 = wx.BoxSizer(wx.HORIZONTAL)
