@@ -3,9 +3,9 @@
 # @File    : pandas_xls.py
 # @Time    : 2025/9/18 15:41
 import pandas as pd
-file = r"C:\Users\Administrator\Desktop\2024李俊工资自检表.xlsx"
+# file = r"C:\Users\Administrator\Desktop\2024李俊工资自检表.xlsx"
 # read_excel(io,sheet_name,header,names,index_col,usecols,squeeze,dtype...)
-df = pd.read_excel(file,'绩效')
+# df = pd.read_excel(file,'绩效')
 # df.columns 读取出所有列名
 # df.loc[i,column] 读取第i行的column列的值
 # df的数据类型就是pd类创建的一个生成器
@@ -23,8 +23,9 @@ for index, row in df.iterrows():
         if not pd.isna(row['提成']): tc += int(row['提成'])
         if not pd.isna(row['项目金额']): count += int(row['项目金额'])
 print(tc, count)
-"""
+
 print(df[df['提成'] > 1000])
+"""
 # pd.concat([生成器1，生成器2,...],ignore_index=True) 把多表纵向拼接
 # 作用把生成器1的数据和生成器2的数据拼接起来
 # 注意拼接的时候生成器的列名必须一致
@@ -39,21 +40,6 @@ print(df[df['提成'] > 1000])
 # left_on 和 right_on 当两表的on的列名称不一致时使用
 # left_index,right_index 当以两个表的index作为拼接的依据时，把这个两个改成True
 
-# pip install python-docx  处理文档的工具包
-from docx import Document
-doc = Document('test.docx')
-# 读取所有的段落
-all_paragraphs = doc.paragraphs
-# 段落的最小单位叫 run
-for paragraph in all_paragraphs: #循环所有的段落
-    for run in paragraph.runs: #循环每个段落中所有的run
-        print(run.text) #每个run中的内容
-# 读取word中所有的表格
-all_table = doc.tables
-# 表格的最小单位叫 cell
-for table in all_table:
-    for row in table.rows: #读取每个表格中所有的行
-        for cell in row.cells: #读取每行中的每一格（cell）
-            print(cell.text)
-# 保存word文件
-doc.save('test.docx')
+# 读取网页中的表格
+df = pd.read_html("https://s.askci.com/stock/xsb/")
+print(df)
