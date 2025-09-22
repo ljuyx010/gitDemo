@@ -31,7 +31,7 @@ class Migong{
 		// 创建一个8行8列的棋盘
 		
 		Migong h = new Migong();
-		h.huanghou(0,5);
+		h.huanghou(0,2);
 		//输出
 		h.printq(h.map);
 	}
@@ -78,14 +78,13 @@ class Migong{
 		}else{
 			//如果不是第一行，则把皇后放入每个位置并判断是否冲突
 			for(int i=0;i<map.length;i++){
-				map[x][i] = 1;
 				//判断此位置是否冲突
-				if(judge(x,i)){
-					//如果冲突则撤回皇后
-					map[x][i]=0;
-				}else{
-					//不冲突则从此位置放下一个皇后
+				if(!judge(x,i)){
+					//不冲突则放置皇后并尝试放下一个皇后
+					map[x][i] = 1;
 					huanghou(x+1,i);
+					//如果下一个皇后冲突则回溯撤回当前皇后
+					map[x][i]=0;
 				}
 				
 			}
@@ -99,33 +98,29 @@ class Migong{
 		//判断是否冲突
 		for(int i =0;i<map.length;i++){
 			
-			//如果这一行或这一列除自己所在位置外还有皇后
-			if((i!=x && map[i][y] == 1) || (i!=y && map[x][i]==1)){
+			//如果这一列有皇后
+			if( map[i][y] == 1){
 				return true;
 			}
-			// 往右下的斜线有皇后
-			if(x+i<map.length && y+i<map.length ){
+			// 往右下的斜线有皇后（往下的位置还没有放不用判断）
+			/*if(x+i<map.length && y+i<map.length ){
 				if(i!=0 && map[x+i][y+i] == 1){
 					return true;
 				}
-			}
+			}*/
 			// 往左上的斜线有皇后
-			if(x-i>=0 && y-i>=0){
-				if(i!=0 && map[x-i][y-i] == 1){
-					return true;
-				}
+			if(x-i>=0 && y-i>=0 && map[x-i][y-i] == 1){
+				return true;
 			}
-			// 往左下的斜线有皇后
-			if(x+i<map.length && y-i>=0){
+			// 往左下的斜线有皇后（往下的位置还没有放不用判断）
+			/*if(x+i<map.length && y-i>=0){
 				if(i!=0 && map[x+i][y-i] == 1){
 					return true;
 				}
-			}
+			}*/
 			// 往右上的斜线有皇后
-			if(x-i>=0 && y+i<map.length){
-				if(i!=0 && map[x-i][y+i] == 1){
-					return true;
-				}
+			if(x-i>=0 && y+i<map.length && map[x-i][y+i] == 1){
+				return true;
 			}
 		}
 		//System.out.println(x +","+ y +"不冲突");
