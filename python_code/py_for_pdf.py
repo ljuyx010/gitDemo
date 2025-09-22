@@ -50,8 +50,16 @@ input_pdf = PdfReader(r'C:\Users\Administrator\Desktop\黄冈师范校友会售�
 pdf_writer = PdfWriter() #创建一个新的空pdf文档
 pdf_writer.add_page(input_pdf.pages[0]) #把第一页的内容加入空文档
 # 保存新的文件
-with open(r'C:\Users\Administrator\Desktop\第一页.pdf','wb') as f:
-    pdf_writer.write(f)
+# with open(r'C:\Users\Administrator\Desktop\第一页.pdf','wb') as f:
+#     pdf_writer.write(f)
 
 
 # 合并pdf文档
+new_pdf = PdfWriter() #创建一个空pdf实例
+count = len(input_pdf.pages) #获取合并文档的总页码
+for ipage in range(count):
+    # 把每一页加入到空文档
+    new_pdf.add_page(input_pdf.getPage(ipage))
+# 保存新的文件
+with open(r'C:\Users\Administrator\Desktop\合并的pdf.pdf','wb') as f:
+    new_pdf.write(f)
