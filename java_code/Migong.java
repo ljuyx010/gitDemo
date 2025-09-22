@@ -31,7 +31,7 @@ class Migong{
 		// 创建一个8行8列的棋盘
 		
 		Migong h = new Migong();
-		h.huanghou(0,2);
+		h.huanghou(0,7); //放置第一个皇后位置，计算出可行的方案。
 		//输出
 		h.printq(h.map);
 	}
@@ -66,35 +66,39 @@ class Migong{
 	} 
 	
 	//走皇后的方法，放置皇后的位置设为1,n为第几个皇后个数
-	void huanghou(int x,int y){
+	boolean huanghou(int x,int y){
 		if(x == 8){
-			return;
+			return true;
 		}
-		if(x == 0){
-			//如果是第一个位置直接放皇后
-			map[x][y] = 1;
-			//并尝试下一行
-			huanghou(x+1,y);
-		}else{
-			//如果不是第一行，则把皇后放入每个位置并判断是否冲突
-			for(int i=0;i<map.length;i++){
-				//判断此位置是否冲突
-				if(!judge(x,i)){
-					//不冲突则放置皇后并尝试放下一个皇后
-					map[x][i] = 1;
-					huanghou(x+1,i);
-					//如果下一个皇后冲突则回溯撤回当前皇后
+		if(x==0){
+			//确定第一个皇后的位置
+			map[x][y]=1;
+			//尝试放下一个皇后
+			x=x+1;
+		}
+		//把皇后放入每个位置并判断是否冲突
+		for(int i=0;i<map.length;i++){
+			//判断此位置是否冲突
+			if(!judge(x,i)){
+				//不冲突则放置皇后再此位置，并尝试放下一个皇后
+				map[x][i] = 1;
+				boolean next = huanghou(x+1,i);
+				if(next){
+					//如果下一个皇后不冲突则返回
+					return true;
+				}else{
+					//如果下一个皇后冲突则撤回当前皇后
 					map[x][i]=0;
 				}
-				
 			}
+			
 		}
-		
-
+		//如果不满足返回true的情况则默认返回false
+		return false;
 	}
 	
 	boolean judge(int x,int y){	
-		System.out.println(x +","+ y +","+map[x][y]);
+		//System.out.println(x +","+ y +","+map[x][y]);
 		//判断是否冲突
 		for(int i =0;i<map.length;i++){
 			
