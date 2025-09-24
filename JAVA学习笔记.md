@@ -1128,4 +1128,66 @@ this的注意事项：
 4. 访问构造器的语法：this(参数列表); 注意只能在构造器中使用（即只能在构造器中访问另外一个构造器，并且this构造器必须放在构造器的第一条语句）
 5. this不能再类定义的外部使用，只能在类定义的方法中使用。
 
-250
+## 面向对象编程
+
+### 包
+
+包有三大作用：
+
+1.区分相同名字的类
+
+2.当类很多时，可以很好的管理类
+
+3.控制访问范围
+
+包基本语法： package 包名;   package 关键字，表示打包
+
+包的本质：实际上就是创建不同的文件夹/目录来保存类文件。
+
+包的命名规则：
+
+只能包含数字，字母，下划线，小圆点，但不能用数字开头，不能是关键字或保留字
+
+命名规范：一般是小写字母+小圆点。一般是com.公司名.项目名.业务模块名
+
+java中常用的包：
+
+java.lang.*   //lang包是基本包，默认引入，不需要再引入
+
+java.util.* 	//util包，系统提供的工具包，工具类
+
+java.net.*	//网络包，网络开发
+
+java.awt.*	//是做java的界面开发，GUI
+
+**引入包**
+
+语法： import 包;
+
+我们引入一个包的主要目的是要使用该包下的类
+
+比如 import java.util.Scanner; 就只是引入一个类Scanner
+
+import java.util.*;  表示将java.util包下所有的类都引入（推荐使用单独引入）
+
+包的注意事项：
+
+1.package 的作用是声明当前类所在的包，需要放在类的class的最上面，一个类中最多只有一句package
+
+2.import指令 位置放在package的下面，在类定义前面，可以有多句且没有顺序要求。
+
+```java
+package com.dpwl.web.model;
+// package 声明当前类的位置
+import java.util.Arrays;
+// 引用其他包下的类
+public class Model {
+    static void main() {
+        int[] ints = new int[4];
+        ints = new int[]{1, 5, 8, -1};
+        Arrays.sort(ints);
+    }
+}
+```
+
+278
