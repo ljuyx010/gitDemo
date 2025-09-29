@@ -31,6 +31,11 @@ class SmallChange {
                     System.out.print("收益入账金额：");
                     money = sc.nextDouble();
                     //money的值需要校验
+                    // 找出不正确的金额的条件，然后给出提示，就直接break
+                    if(money <= 0){
+                        System.out.println("收益入驻金额需要大于0");
+                        break;
+                    }
                     balance += money;
                     date = new Date();
                     details += "\n收益入账\t+" + money + "\t" + sdf.format(date) + "\t" + balance;
@@ -39,6 +44,10 @@ class SmallChange {
                     System.out.print("消费金额：");
                     //消费金额也需要校验
                     money = sc.nextDouble();
+                    if(money <= 0 || money > balance){
+                        System.out.println("消费金额应该在0到"+balance+"之内");
+                        break;
+                    }
                     balance -= money;
                     System.out.print("消费说明：");
                     note = sc.next();
