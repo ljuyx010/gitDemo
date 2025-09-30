@@ -1689,5 +1689,90 @@ class Movie{
    - 子类的构造方法
 7. 静态代码块只能直接调用静态成员（静态属性和静态方法），普通代码块可以调用任意成员。
 
-390
+## 单例设计模式
 
+所谓类的单例(单个实例)设计模式，就是采取一定的方法保证在整个的软件系统中，对某个类只能存在一个对象实例，并且该类只提供一个取得其对象实例的方法。
+
+单例模式有两种方式：1.饿汉式 2.懒汉式
+
+饿汉式步骤如下
+
+1. 构造器私有化  ==》防止直接new
+2. 累牍内部创建对象
+3. 向外暴露一个静态的公共方法
+
+```java
+//有一个类，目标需求是GirlFriend类 只能创建一个女朋友
+class SingleTon{
+    pulic static void main(String[] args){
+        //通过方法获取对象,即可完成目标
+        GirlFriend instance = GirlFriend.getInstance();
+    }
+}
+//饿汉式单例案例（类的实例还没有确定要使用就已经创建好了，饿汉式可能造成实例创建了没有使用，造成资源的浪费）
+class GirlFriend{
+    private String name;
+    //如果保证我们只能创建一个GirlFriend对象？
+    //1.将构造器私有化,外部别人就不能实例化类
+    private GirlFriend(String name){
+        this.name = name;
+    }
+    //2.在类的内部直接创建一个静态对象，实现唯一性
+    private static GirlFriend gf = new GirlFriend("小红");
+    //3.提供一个公共的static方法，返回内部创建的对象
+    public static GirlFriend getInstance(){
+        return gf;
+    }
+} 
+//懒汉式单例模式（只有当用户使用时，才返回对象，后面再次调用时，返回的还是上次创建的对象）
+class GirlFriend{
+    private String name;
+    
+    //步骤：
+    //1.将构造器私有化,外部别人就不能实例化类
+    private GirlFriend(String name){
+        this.name = name;
+    }
+    //2.定义一个空的静态变量
+    private static GirlFriend gf = null;
+    //3.定义一个static静态方法，判断对象是否创建，并返回对象
+    public static GirlFriend getInstance(String name){
+        if(gf == null){
+            gf = new GirlFriend(name);
+        }
+        return gf;
+    }
+}
+```
+
+饿汉式 Vs 懒汉式
+
+1. 二者最主要的区别在于创建对象的时机不同：饿汉式实在类加载就创建了对象实例，而懒汉式是在使用时才创建。
+2. 饿汉式不存在线程安全问题，懒汉式存在线程安全问题。（后面学习线程后，会完善）
+3. 饿汉式存在浪费资源的可能，因为如果程序运行时一个对象实例都没有使用，那么饿汉式创建的对象就浪费了，懒汉式是使用时才创建，就不存在这个问题。
+
+## final关键字
+
+final 最后的，最终的
+
+final 可以修饰类、属性、方法和局部变量。
+
+在某些情况下， 程序员可能有以下需求，就会使用到final：
+
+1. 当不希望类被继承时，可以用final修饰
+2. 当不希望父类的某个方法被子类覆盖/重写（override）时，可以用final关键字修饰。
+3. 当不希望类的某个属性的值被修改，可以用final修饰。
+4. 当不希望某个局部变量被修改，可以使用final修饰。
+
+final注意事项：
+
+1. final修饰的属性又叫常量，一般用xx_xx_xx来命名
+2. final修饰的属性在定义时，必须赋初值，并且以后不能再修改，赋值可以在如下位置之一：
+   - 定义时：如 public final double TAX_RATE = 0.08;
+   - 在构造器中
+   - 在代码块中
+3. 如果final修饰的属性是静态的，则初始化的位置只能是1.定义时，2.在静态代码块 不能再构造器中赋值。
+4. final类不能继承，但是可以实例化对象
+5. 如果类不是final类，但是含有final方法，则该方法虽然不能重写，但是可以继承。
+
+395
