@@ -27,15 +27,15 @@ public class View {
     public void addHouse(){
         System.out.println("===============新增房屋===============");
         System.out.print("请输入房屋姓名：");
-        String name = Utility.readString(8);
+        String name = Utility.readString(8,false);
         System.out.print("请输入房屋地址：");
-        String address = Utility.readString(10);
+        String address = Utility.readString(10,false);
         System.out.print("请输入房屋电话：");
-        String phone = Utility.readString(11);
+        String phone = Utility.readString(11,false);
         System.out.print("请输入房屋租金：");
         double rent = Utility.readDouble();
         System.out.print("请输入房屋状态（未出租/已出租）：");
-        String status = Utility.readString(3);
+        String status = Utility.readString(3,false);
         House house = new House( 0,name, address, phone, rent, status);
         if (server.add(house)) {
             System.out.println("新增房屋成功");
@@ -88,22 +88,24 @@ public class View {
         System.out.println("===============修改房屋===============");
         System.out.print("请输入要修改的房屋编号(0-退出)：");
         int id = Utility.readInt();
+
         if (id == 0) {
             System.out.println("退出修改房屋操作");
             return;
         }
         House house = server.find(id);
+
         if (house != null) {
-            System.out.println("请输入新的房屋姓名("+house.getName()+")：");
-            String name = Utility.readString(8);
-            System.out.println("请输入新的房屋地址("+house.getAddress()+")：");
-            String address = Utility.readString(10);
-            System.out.println("请输入新的房屋电话("+house.getPhone()+")：");
-            String phone = Utility.readString(11);
-            System.out.println("请输入新的房屋租金("+house.getRent()+")：");
+            System.out.print("请输入新的房屋姓名("+house.getName()+")：");
+            String name = Utility.readString(8,true);
+            System.out.print("请输入新的房屋地址("+house.getAddress()+")：");
+            String address = Utility.readString(10,true);
+            System.out.print("请输入新的房屋电话("+house.getPhone()+")：");
+            String phone = Utility.readString(11,true);
+            System.out.print("请输入新的房屋租金("+house.getRent()+")：");
             double rent = Utility.readDouble();
-            System.out.println("请输入新的房屋状态("+house.getStatus()+")：");
-            String status = Utility.readString(3);
+            System.out.print("请输入新的房屋状态("+house.getStatus()+")：");
+            String status = Utility.readString(3,true);
             if (!name.equals("")) {
                 //不是空串才修改
                 house.setName(name);
