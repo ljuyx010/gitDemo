@@ -1,0 +1,45 @@
+package untils;
+
+import java.util.Scanner;
+import static java.lang.Character.toLowerCase;
+
+public class Utility {
+    private static Scanner sc = new Scanner(System.in);
+    public Utility(){}
+        //读取键盘输入的一个字符
+        public static char readMenuSelection(){
+            char c = sc.next().charAt(0);
+            return c;
+        }
+        //读取键盘输入的一个整数
+        public static int readInt(){
+            int i = sc.nextInt();
+            return i;
+        }
+        //读取键盘输入的一个浮点数
+        public static double readDouble(){
+            double d = sc.nextDouble();
+            return d;
+        }
+        public static float readFloat(){
+            float f = sc.nextFloat();
+            return f;
+        }
+        //读取键盘输入的一个字符串
+        public static String readString(int length){
+            String str = sc.nextLine();
+            if (str.length() > length) {
+                str = str.substring(0, length);
+            }
+            return str;
+        }
+        //确认是否继续
+        public static char readConfirmSelection(){
+            char c;
+            do {
+                System.out.print("确认选择(y/n)：");
+                c = toLowerCase(sc.next().charAt(0));//将输入的字符转换为小写
+            } while (c != 'y'  && c != 'n');
+            return c;
+        }
+}
