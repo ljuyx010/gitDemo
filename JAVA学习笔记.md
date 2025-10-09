@@ -1840,7 +1840,7 @@ class B extends Template{ //继承模板类
 //使用模板设计可以抽象出具体的业务逻辑，吧大部分工具的代码写到模板类，增加代码的复用性
 ```
 
-## 接口
+### 接口
 
 接口就是给出一些没有实现的方法，封装到一起，到某个类要使用的时候，在根据具体情况把这些方法写出来。
 
@@ -1888,7 +1888,7 @@ jdk8后接口类可以有静态方法，默认方法，也就是说接口中可�
 
 9.就看的修饰符只能是public和默认，这点和类的修饰符是一样的。
 
-### **实现接口 VS 继承类**
+#### **实现接口 VS 继承类**
 
 可以理解为实现是对单继承机制的补充。
 
@@ -1901,7 +1901,7 @@ jdk8后接口类可以有静态方法，默认方法，也就是说接口中可�
    接口比继承更加灵活，继承是满足 is - a的关系，而接口只需要满足 like - a的关系。
 3. 接口在一定程度上实现代码解耦【接口规范性+动态绑定】 
 
-### 接口的多态特性
+#### 接口的多态特性
 
 1. 多态参数
    在前面的usb接口案例，UsbInterface usb，既可以接收手机对象，又可以接收相机对象，就体现了接口多态（接口引用可以指向实现了接口的类的对象，即接口变量可以指向不同的接口实现类实例）
@@ -1911,4 +1911,293 @@ jdk8后接口类可以有静态方法，默认方法，也就是说接口中可�
 
 3. 接口存在多态传递现象。
 
-   410
+   ```java
+   public class InterfacePolyPass{
+       public static void main(String[] args){
+           //接口类型的变量可以指向，实现了该接口的类的对象实例
+           IG ig = new teacher();
+           //如果IG继承了IH接口，而Teacher类实现了IG接口，那么实际上就相当于Teacher类也实现了IH接口，这就是接口多态传递现象。
+           IH ih = new teacher();
+       }
+   }
+   
+   interface IH{}
+   interface IG extends IH{}
+   class Teacher implements Ig{
+       
+   }
+   ```
+
+### 内部类
+
+一个类的内部又完整的嵌套了另一个类结构。被嵌套的类称为内部类(inner class)，嵌套其他类的类称为外部类(outer class)。是我们类的第五大成员。内部类最大的特点就是可以直接访问私有属性，并且可以提现类与类之间的包含关系。
+
+基本语法：
+
+class Outer{ //外部类
+
+​	class Inner{ // 内部类
+
+​	}
+
+}
+
+class Other{ //外部其他类
+
+}
+
+类的小结：
+
+类的五大成员：1.属性 2.方法 3.构造器 4.代码块 5.内部类
+
+#### 内部类的分类
+
+定义在外部类局部位置上（比如方法内）：
+
+1. 局部内部类（有类名）
+
+   - 局部内部类是定义在外部类的局部位置，通常在方法内，
+   - 局部内部类（本质仍然是一个类）可以直接访问外部类的所有成员，包括私有的。
+   - 不能添加访问修饰符，但是可以使用final修饰（不能再被其他类继承）
+   - 作用域：仅仅在定义它的方法或代码块中。
+   - 局部内部类可以直接访问外部类的成员。
+   - 外部类不能访问局部内部类，那如何使用局部内部类：在方法中，可以创建包含内部类的方法对象，然后用对象调用该方法即可。
+   - 如果外部类和局部内部类的成员重名时，默认遵循就近原则，如果想访问外部类的成员，则可以使用（外部类名.this.成员）去访问
+
+2. 匿名内部类（没有类名，**重点！！！**）
+   匿名内部类的特点：1.本质是类 2.是内部类 3.该类没有定义名字（系统分配）4. 同时还是一个对象
+
+   ```java
+   //基本语法
+   new 类或接口(参数列表){
+       类体
+   }
+   ```
+
+   匿名内部类的语法比较奇特，请注意，因为匿名内部类即是一个类的定义，同时它本身也是一个对象，因此从语法上看，它既有定义类的特征，也有创建对象的特征，因此可以调用匿名内部类的方法如下。
+
+   ```java
+   new A(){
+       @Override
+       public void cry(){
+           System.out.println("Hello");
+       }
+   }.cry(); //定义类，并直接调用方法
+   
+   A a = new A(){
+       @Override
+       public void cry(){
+           System.out.println("Hello");
+       }
+   } //定义类，并创建对象赋值
+   a.cry(); //使用对象调用方法
+   ```
+
+   匿名内部类的最佳实践
+
+   ```java
+   //当做实参时间传递，简介高效
+   interface AA{
+       public void cry();
+   }
+   //main 方法中：
+   public static void show(AA a){
+       a.cry();
+   }
+   show(new AA{
+       @Override
+       public void cry(){
+           System.out.print('这是一个匿名内部类');
+       }
+   });
+   ```
+
+   
+
+定义在外部类的成员位置上：
+
+1. 成员内部类（没用static修饰）
+
+   ```java
+   class Outer{
+       //外部类
+       private int n1 = 10;
+       public String name = "张三";
+       class Inner{
+           //成员内部类
+           public void say(){
+               //可以直接访问外部类的所有成员，包含私有的
+               System.out.println("n1="+n1+"name="+name);
+           }
+       }
+       //方法可以直接使用成员内部类
+       public void t1(){
+           Inner inner = new Inner();
+           inner.say();          
+       }
+   }
+   ```
+
+   - 成员内部类定义在外部类的成员位置上（即不在方法或代码块内），可以直接访问外部类的所有成员，包含私有的
+
+   - 可以添加任意访问修饰符（public，protected，默认，private），因为它的地位就是一个成员。
+
+   - 作用域和外部类的其他成员一样，为整个类体。在外部类的成员方法中创建成员内部类对象，再调用方法。
+
+   - 成员内部类访问外部类成员：直接访问
+
+   - 外部类访问成员内部类：创建对象，再访问
+
+   - 外部其他类访问成员内部类三种方法：
+
+     ```java
+     //方法一 外部类.new 内部类
+     Outer.Inner inner = Outer.new Inner();
+     //方法二 在外部类中写一个方法，返回实例化成员内部类
+     public void getInner(){
+         return new Inner();     
+     }
+     Outer.Inner inner = Outer.getInner();
+     //方法三 和方法一类似
+     Outer.Inner inner = new Outer.new Inner();
+     ```
+
+   - 如果成员内部类的成员和外部类的成员重名，会遵守就近原则，如果要访问外部类的成员，使用 外部类.this.成员
+
+2. 静态内部类（使用static修饰）
+   静态内部类是定义在外部类的成员位置，并且有static修饰。
+
+   - 可以直接访问外部类的所有静态成员，包含私有的，但不能直接访问非静态成员。
+
+   - 可以添加任意访问修饰符（public，protected，默认，private），因为它的地位就是一个成员。
+
+   - 作用域：同其他成员，整个类体。
+
+   - 静态内部类访问外部类：直接访问所有静态成员
+
+   - 外部类访问静态内部类：创建对象，再访问
+
+   - 外部其他类访问静态内部类
+
+     ```java
+     //方式一
+     Outer.Inner inner = new Outer.Inner();
+     //方式二， 写一个方法，返回内部类的实例
+     public void getInner(){
+         return new Inner();      
+     }
+     Outer.Inner inner = Outer.getInner();
+     ```
+
+   - 如果成员内部类的成员和外部类的成员重名，会遵守就近原则，如果要访问外部类的成员，使用 外部类.this.成员
+
+## 枚举和注解
+
+枚举英文enumeration，简写enum
+
+枚举是一组常量的集合
+
+可以这样理解：枚举属于一种特殊的类，里面只包含一组有限的特定的对象。
+
+### 自定义枚举
+
+自定义枚举的步骤：
+
+1. 将构造器私有化，目的是防止直接new
+2. 去掉setXXX方法
+3. 在类的内部创建固定的对象。对枚举对象/属性使用 final +static 共同修饰，实现底层优化。枚举对象名通常使用全部大写，常量的命名规范。
+4. 枚举对象根据需要，也可以有多个属性。
+
+```java
+//自定义枚举类
+class Season{
+    private String name;
+    private String desc;
+    Season(String name,String desc) {
+        this.name = name;
+        this.desc = desc;
+    }
+    
+    public final static Season SPRING = new Season("春天","春暖花开");
+    public final static Season SUMMER = new Season("夏天","夏日炎炎");
+    public final static Season AUTUMN = new Season("秋天","秋高气爽");
+    public final static Season WINTER = new Season("冬天","冬雪皑皑");
+    
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    @Override
+    public String toString() {
+        return "Season{" +
+                "name='" + name + '\'' +
+                ", desc='" + desc + '\'' +
+                '}';
+    }
+}
+```
+
+
+
+### enum关键字实现枚举
+
+1. 使用enum关键字替代class
+2. 常量名(实参列表);
+3. 如果有多个常量（对象），使用`,`间隔即可
+4. 使用enum关键字定义枚举，要求将常量对象，写在最前面。
+
+```java
+//enum关键字枚举
+enum Season{
+    SPRING("春天","春暖花开"),
+    SUMMER("夏天","夏日炎炎"),
+    AUTUMN("秋天","秋高气爽"),
+    WINTER("冬天","冬雪皑皑");
+    private String name;
+    private String desc;
+    Season(String name,String desc) {
+        this.name = name;
+        this.desc = desc;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    @Override
+    public String toString() {
+        return "Season{" +
+                "name='" + name + '\'' +
+                ", desc='" + desc + '\'' +
+                '}';
+    }
+}
+```
+
+注意事项：
+
+1. 当我们使用enum关键字开发一个枚举类时，默认会继承Enum类，而且是一个final类。
+2. 传统的`public static final Season SPRING = new Season("春天","春暖花开");`简化成`SPRING("春天","春暖花开");`这里必须知道，它调用的是那个构造器。
+3. 如果使用无参构造器，创建枚举对象，则实参列表和小括号都可以省略
+4. 当有多个枚举对象时，使用`,`间隔，最后一个用分号结尾。
+5. 枚举对象必须放在枚举类的行首。
+
+### Enum类各种方法的使用
+
+1.  toString() 返回的是当前对象名，子类可以重写该方法，用于返回对象的属性信息
+2. name() 输出枚举对象的名称
+3. ordinal() 输出的是该枚举对象的次序/编号，从0开始。
+4. values() 返回含有定义的所有枚举对象的数组
+5. valueOf() 将字符串转换成枚举对象，要求字符串必须为已有的常量名，否则报异常
+6. compareTo() 比较两个枚举常量，比较的就是位置号（枚举对象.compareTo(枚举对象2);结果就是枚举对象编号减枚举对象2的编号）
+
+431
