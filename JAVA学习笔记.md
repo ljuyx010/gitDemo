@@ -2200,4 +2200,157 @@ enum Season{
 5. valueOf() 将字符串转换成枚举对象，要求字符串必须为已有的常量名，否则报异常
 6. compareTo() 比较两个枚举常量，比较的就是位置号（枚举对象.compareTo(枚举对象2);结果就是枚举对象编号减枚举对象2的编号）
 
-431
+### enum实现接口
+
+1.使用enum关键字后，就不能再继承其他类了，因为enum会隐式继承Enum，而java是单继承机制。
+
+2.枚举类和普通类一样，可以实现接口，如下形式。
+
+`enum 类名 implements 接口1,接口2{ }`
+
+## 注解
+
+1.注解（Annotation）也被称为元数据（Metadata）,用于修饰解释包、类、方法、属性、构造器、局部变量等数据信息。
+
+2.和注释一样，注解不影响程序逻辑，但注解可以被编译或运行，相当于嵌入在代码中的补充信息。
+
+3.在javaSE中，注解的使用目的比较简单，例如标记过时的功能，忽略警告等。在javaEE中注解占据了更重要的角色，例如用来配置应用程序的任何切面，代替java EE旧版中所遗留的繁冗代码和XML配置等。
+
+使用Annotation时要在其前面增加@符号，并把该Annotation当成一个修饰符使用。用于修饰它支持的程序元素
+
+三个基本的Annotation：
+
+1. @Override：限定某个方法，是重写父类方法，该注解只能用于方法
+
+   - @Override表示指定重写父类的方法（从编译层面验证），如果父类没有fly方法，则会报错
+   - 如果不写@Override注解，而父类仍有public void fly(){}，仍然构成重写
+   - @Override 只能修饰方法，不能修饰其他类，包，属性等
+   - 查看@Override注解源码为@Target(ElementType.METHOD),说明只能修饰方法
+   - @Target是修饰注解的注解，成为元注解。
+
+2. @Deprecated：用于表示某个程序元素（类，方法等）已过时
+
+   - 修饰某个元素，表示该元素已经过时
+   - 即不在推荐使用，但是仍然可以使用
+   - 可以修饰方法，类，字段，包，参数等
+   - 可以做版本升级过渡使用
+
+3. @SuppressWarnings：抑制编译器警告
+
+   - 当我们不希望看到这些警告的时候可以使用@SupperWarnings({"All"}):忽略所有警告。
+
+   - all:   抑制所有的警告
+
+     boxing:        抑制与装箱/拆箱操作相关的警告
+
+     cast:         抑制与强制转换操作相关的警告
+
+     dep-ann:       抑制与已弃用注释相关的警告
+
+     deprecation:     抑制与弃用相关的警告
+
+     fallthrough:     在开关语句中抑制与丢失中断相关的警告
+
+     finally:        抑制与最终块相关的不返回的警告
+
+     hiding:        为了抑制相对于本地隐藏变量的警告。
+
+     incomplete-switch:  在switch语句(enum案例)中，为了抑制相对于丢失条目的警告
+
+     nls:          抑制相对于非nls字符串常量的警告
+
+     null:         抑制与空分析相关的警告
+
+     rawtypes:       在类params上使用泛型时，要抑制相对于非特定类型的警告。
+
+     restriction:      抑制与使用不鼓励或禁止引用有关的警告
+
+     serial:         禁止对可序列化类缺少serialVersionUID字段的警告
+
+     static-access:     抑制与不正确的静态访问相关的警告
+
+     synthetic-access:   抑制与内部类的未优化访问相关的警告
+
+     unchecked:      抑制与未检查操作相关的警告
+
+     unqualified-field-access: 抑制与字段访问不限定相关的警告
+
+     unused:        抑制与未使用代码相关的警告
+
+   - @SuppressWarnings作用范围是和放置的位置相关。通常可以放到属性，方法，或者类的前面。
+
+**元注解（了解）**
+
+元注解的种类：
+
+1. Retention  指定注解的作用范围，三种，RetentionPolicy.SOURCE(作用于源码，编译器使用后，直接丢弃这种策略的注解)
+   RetentionPolicy.CLASS(编译器把注解记录在class文件中，当运行java程序时，jvm不会保留注解，默认值)，RetentionPolicy.RUNTIME(编辑器将把注解记录在class文件中，当运行java程序时，jvm会保留注解，程序可以通过反射获取该注解)
+2. Target 指定注解可以再那些地方使用
+3. Documented 指定该注销是否会再javadoc体现
+4. Inherited 子类会继承父类注解
+
+## 异常处理
+
+异常介绍：
+
+java语言中，将程序执行中发生的不正常情况称为“异常”。（开发过程中的语法错误和逻辑错误不是异常）
+
+执行过程中所发生的异常事件可分为两类
+
+1. Error（错误），java虚拟机无法解决的严重问题
+2. Exception：其他因编程错误或偶然的外在因素导致的一般性问题，可以使用针对性的代码进行处理。Exception分为两大类：运行时异常和编译时异常（是必须要处理的异常）。
+
+异常体系图
+
+![QQ20251010-163307](.\img\QQ20251010-163307.png)
+
+### 常见的运行时异常
+
+1. NullPointerException 空指针异常
+2. ArithmeticException 数学运算异常
+3. ArrayIndexOutOfBoundsException 数组下标越界异常
+4. ClassCastException 类型转换异常
+5. NumberFormatException 数字格式不正确异常
+
+### 编译异常
+
+编译异常是指在编译期间，就必须处理的异常，否则代码不能通过编译。
+
+常见的编译异常
+
+- SQLException 操作数据库时，查询表可能发生异常
+- IOException 操作文件时，发生的异常
+- FileNotFoundException 当操作一个不存在的文件时，发生异常
+- ClassNotFoundException 加载类，而该类不存在时，异常
+- EOFException 操作文件，到文件末尾，发生异常
+- IIIegalArguementException 参数异常
+
+### 异常处理
+
+异常处理就是当异常发生时，对异常处理的方法。
+
+异常处理的方式：
+
+1. try - catch - finally
+   程序猿在代码中捕获发生的异常，自行处理
+
+   ```java
+   try{
+       有可能发生异常的代码
+   }catch(Exception e){
+      // 捕获到异常
+      // 1. 当异常发生时
+      // 2. 系统将异常封装成Exception 对象 e,传递给catch
+      // 3. 得到异常对象后，程序员自己处理
+      // 4. 如果没有发生异常，catch代码块不执行
+   }finally{
+       // 不管try代码块是否有异常发生，始终要执行finally，所以通常将释放资源的代码，放在finally
+   }
+   ```
+
+2. throws
+
+   将发生的异常抛出，交给调用者（方法）来处理，最顶级的处理者就是jvm，系统默认就是使用throws处理异常。
+   
+
+449
