@@ -2470,5 +2470,205 @@ System.out.print(obj1);
 
 ​	
 
-463
+### **Integer创建机制**
+
+Integer包装的int数如果在-128到127之间则直接从cache中读取，如果不在这个范围内，则创建新的对象。
+
+new 出来的两个对象一定是不同的对象。
+
+```java
+Integer i1 = new Integer(127);
+Integer i2 = new Integer(127);
+System.out.println(i1==i2);  // False，new出来的肯定是不同的对象
+
+Integer i11 = 127;
+int i12 = 127;
+System.out.println(i11==i12); //True 只要有基本数据类型就是比较值是否相等
+```
+
+### String类
+
+String对象用于保存字符串，也就是一组字符串序列。
+![QQ20251013-100511](.\img\QQ20251013-100511.png)
+
+字符串常量对象是用双引号括起来的字符序列，如："你好"，“12.97”，"boy"等。
+
+字符串的字符使用unicode字符编码，一个字符（不区分字母还是汉字）占两个字节
+
+String类较常用的构造方法：
+
+- String s1 = new String();
+- String s2 = new String(String original);
+- String s3 = new String(char[] a);
+- String s4 = new String(char[] a,int startIndex,int count);
+
+String 类实现了接口Serializable【String可以串行化：可以再网络传输】
+
+String类实现了接口Comparable【String对象可以比较大小】
+
+String是final类，不能被其他的类继承
+
+String 有属性 private final char value[]；用于存储字符串内容，一定注意：value是一个final类型，不可以修改（此处的不可修改不是指字符串内容不可修改，而是指value的**内存地址不可修改**，value存放的常量池地址是可以修改的。）
+栈：String --》堆：value --》常量池：具体字符
+
+**创建String对象的两种方式：**
+
+方式一：直接赋值 String s = “dpwl”;
+
+方式二：调用构造器 String s2 = new String("dpwl");
+
+两种方式的区别：
+
+1. 方式一：先从常量池查看是否有"dpwl"数据空间，如果有，直接指向；如果灭有则重新创建，然后指向。s最终指向的是常量池的空间地址
+2. 方式二：现在堆中创建空间，里面维护了value属性，指向常量池的“dpwl”空间，如果常量池没有“dpwl”,重新创建，如果有，直接通过value指向。最终指向的是堆中的空间地址。
+
+小结：String c ="a" + "b"；常量相加，看的是常量池，String c1 = a + b;变量想加，是在堆中。
+
+**String类的常见方法**
+
+String类是保存字符串常量的，每次更新都需要新开辟空间，效率较低，因此java设计者还提供了`StringBuilder`和`StringBuffer`来增强String的功能，并提高效率。
+
+String类的常见方法：
+
+- equals  区分大小写，判断内容是否相等
+- equalslgnoreCase 忽略大小写判断内容是否相等
+- length 获取字符的个数，字符串的长度
+- indexOf 获取字符在字符串中第1次出现的索引，索引从0开始，如果找不到 -1
+- lastIndexOf 获取字符在字符串中最后1次出现的索引，从0开始，找不到-1
+- substring 截取指定范围的子串`substring(6)从索引6后截取全部，substring(2,5)从索引2到索引4，不含5的3个字符`
+- trim 去掉前后空格
+- charAt 获取某索引处的字符，注意不能使用Str[index]这种方式
+- toUpperCase 字符串转大写
+- toLowerCase 字符串转小写
+- concat  拼接字符串
+- compateTo 比较字符串大小，如前者大返回正数，后者大返回负数
+- toCharArray 转换成字符串数组
+- format 格式字符串，%s 字符串 %c 字符 %d 整型 %.2f 保留2位(四舍五入)的浮点型
+- replace 替换字符串中的字符`s2 = s1.replace("a","b")；执行后s1不变，把返回的新字符串赋值给s2`
+- split 分割字符串返回一个数组，需要转义字符串中的| \\等
+
+**StringBuffer类**
+
+代表可变的字符序列，可以对字符串内容进行增删。很多方法与String相同，但StringBuffer是可变长度的。（StringBuffer存放的不是字符常量，所以可知，它是存放在堆中的）
+
+StringBuffer是一个容器。
+
+StringBuffer是一个final类，不能被继承。
+
+因为StringBuffer字符内容是存在char[] value,所以在变化（增加/删除）不用每次都更换地址（只有增加到空间不够时，才使用更大的空间，此时才更换地址）
+
+**String Vs StringBuffer**
+
+1. String保存的是字符串常量，里面的值不能更改，每次String类的更新实际上就是更改地址，效率较低。// private final char value[]；
+2. StringBuffer保存的是字符串变量，里面的值可以更改，每次StringBuffer的更新实际上可以更新内容，不用每次更新地址，效率较高。
+
+```java
+// StringBuffer构造器的使用
+//创建一个大小为16的char[]，用于存放字符内容。
+StringBuffer str = new StringBuffer(); 
+//通过构造器指定char[] 大小
+StringBuffer str = new StringBuffer(100);
+// 通过给一个String，创建StringBuffer，char[]大小就是str.length()+16
+StringBuffer str = new StringBuffer("hello"); 
+```
+
+**string 和StringBuffer的转换**
+
+1. String转StringBuffer
+
+   ```java
+   String str = "hello tom";
+   StringBuffer string = new StringBuffer(str);
+   //注意：返回的才是StringBuffer对象，原来的str不变。
+   //方式二 使用append方法
+   StringBuffer string2 = new StringBuffer();
+   string2 = string2.append(str);
+   ```
+
+2. StringBuffer 转String
+
+   ```java
+   StringBuffer string = new StringBuffer("hello tom");
+   //方式一，toString方法
+   String s = string.toString();
+   //方式二 使用构造器
+   String string2 = new String(string);
+   ```
+
+**StringBuffer的常见方法**
+
+- append  在后面追加
+- delete(start,end) 删除>=start&&<end 处的字符
+- replace(start,end,str)  把>=start&&<end 处的字符替换成str
+- indexOf  查找字符在字符串中的位置索引，找不到返回-1
+- insert(n,str)  在索引n处插入str，n处原来的字符后移
+- length  返回字符串的长度
+
+**StringBuilder类**
+
+一个可变的字符序列。此类提供一个与StringBuffer兼容的API，但不保证同步（StringBuilder不是线程安全）。该类被设计用作StringBuffer的一个简易替换，用在字符串缓冲区被单个线程使用的时候。如果可能，建议有限采用该类，因为在大多数实现中，它比StringBuffer要快。
+
+在StringBuilder上的主要操作是append和insert方法，可重载这些方法，以接受任意类型的数据。 
+
+**String 、StringBuffer和StringBuilder的比较**
+
+1. StringBuffer和StringBuilder非常类似，均代表可变的字符序列，而且方法也一样
+
+2. String：不可变字符序列，效率低，但是复用率高。
+
+3. StringBuffer：可变字符序列，效率较高（增删），线程安全
+
+4. StringBuilder：可变字符序列，效率最高，线程不安全
+
+5. String使用注意说明
+
+   ```java
+   String s = "a"; //创建了一个字符串
+   s+="b"; //实际上原来的“a”字符串对象已经丢弃了，现在又产生了一个字符串s+“b”（也就是“ab”）。如果多次执行这些改变串内容的操作，会导致大量副本字符串对象存留在内存中，降低效率，如果这样的操作放到循环中，会极大影响程序的性能==》结论：如果我们对String做大量修改，不要使用String
+   ```
+
+使用的原则，结论：
+
+如果字符串存在大量的修改操作，一般使用StringBuffer或StringBuilder
+
+如果字符串存在大量的修改操作，并在单线程的情况，使用StringBuilder
+
+如果字符串存在大量的修改操作，并在多线程的情况，使用StringBuffer
+
+如果字符串很少修改，被多个对象引用，使用String，比如配置信息等
+
+### Math类
+
+Math类包含用于执行基本数学运算的方法，如初等指数，对数，平方根和三角函数
+
+常用方法（都是静态方法）：
+
+1. abs 求绝对值
+
+2. pow 求幂 `Math.pow(2,4) //2的4次方`
+
+3. ceil 向上取整，返回>=该参数的最小整数（转成double）
+
+4. floor 向下取整，返回<=该参数的最大整数（转成double）
+
+5. round 四舍五入
+
+6. sqrt 求开方
+
+7. random 返回[0,1)之间的随机小数
+
+   ```java
+   //如果随机生成一个大于等于a，小于等于b的数
+   // 因为0<=Math.random()<1，设x = Match.random();
+   // 所以 x*a + a >=a, b.x+1-a+a<=b 把前面的a带入=》 b.x-x.a+1+a<=b 可以推导出这个随机数就是 (int)x*(b-a+1)+a<=b
+   ```
+
+### Arrays类
+
+Arrays里面包含了一系列静态方法，用于管理或操作数组（比如排序和搜索）。
+
+1. toString返回数组的字符串形式  Arrays.toString(arr)
+2. sort 排序 （自然排序和定制排序）
+3. 
+   481
 
