@@ -2537,7 +2537,7 @@ String类的常见方法：
 - lastIndexOf 获取字符在字符串中最后1次出现的索引，从0开始，找不到-1
 - substring 截取指定范围的子串`substring(6)从索引6后截取全部，substring(2,5)从索引2到索引4，不含5的3个字符`
 - trim 去掉前后空格
-- charAt 获取某索引处的字符，注意不能使用Str[index]这种方式
+- charAt 获取某索引处的字符，**注意不能使用Str[index]这种方式**
 - toUpperCase 字符串转大写
 - toLowerCase 字符串转小写
 - concat  拼接字符串
@@ -2668,7 +2668,147 @@ Math类包含用于执行基本数学运算的方法，如初等指数，对数�
 Arrays里面包含了一系列静态方法，用于管理或操作数组（比如排序和搜索）。
 
 1. toString返回数组的字符串形式  Arrays.toString(arr)
-2. sort 排序 （自然排序和定制排序）
-3. 
-   481
 
+2. sort 排序 （自然排序和定制排序）
+
+   ```java
+   //sort 自定义排序
+   Arrays.sort(arr,new Comparator(){
+       //实现了Comparetor接口的匿名内部类，要求实现compare方法
+       @Override
+       public int compare(Object o1,Object o2){        
+           Integer i1 = (Integer) o1;
+           Integer i2 = (Integer) o2;
+   		return i2-i1; //从大到小， i1-i2 从小到大
+       }
+   });
+   ```
+
+   
+
+3. binarySearch 通过二分搜索法进行查找，要求必须排好序，找不到返-(low+1)
+   
+4. copyOf 数组元素的复制，`Arrays.copyOf(arr,len)`如果拷贝的len比arr.length()小，则新数组从后面删除，如果比它大，则新数组后面加null，len小于0则报异常。
+
+5. fill 数组元素的填充`Arrays.fill(arr,9)`使用9替换掉arr数组内所有的元素
+
+6. equals 比较两个数组元素内容是否完全一致
+
+7. asList 将一组值，转换成list
+
+### System类
+
+系统类
+
+1. exit 退出当前程序`System.exit(0)`0表示退出的状态是正常退出
+2. arraycopy 复制数组元素，比较适合底层调用，一般使用Arrays.copyOf完成复制数组。`System.arraycopy(arr,0,newarr,0,3)`arr是要复制的源数组，0复制的起始位置索引，newarr 复制到的目标数组，0,3复制到数组的开始索引和元素个数
+3. currentTimeMillens 返回当前时间距离1970-1-1的毫秒数
+4. gc 运行垃圾回收机制 System.gc();
+
+### BigInteger和BigDecimal 类
+
+BigInteger 保存数据比较大的整数
+
+BigDecimal 保存数据比较大的浮点数
+
+常见方法：
+
+1. add 加
+
+2. subtract 减
+
+3. multiply 乘
+
+4. divide 除 可能会抛出异常，如果除不尽无限循环就异常，可以控制精度来处理
+
+   `num1.divide(num2,BigDecimal.ROUND_CEILING)`ROUND_CEILING保留和分子一样的精度
+
+### 日期类
+
+日期类分为：Date，Calendar，LocalDate 三类
+
+**Date类**在java.util包
+
+获取的是系统当前时间，输出的格式是国外的方式通常需要格式转换
+
+`SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 hh:mm:ss E");` E=星期
+
+`Date(long date)`传入long类型的毫秒返回日期
+
+String转Date：`sdf.parse(str) `注意，字符串的格式必须和上面定义的格式保持一致，否则就报异常。
+
+**Calendar类**：第二代日期类日历
+
+calendar类是一个抽象类，它为特定瞬间与一组诸如YEAR，MONTH，DAY_OF_MONTH，HOUR等日历字段之间的转换提供了一些方法，并为操作日历自段（例如获得下星期的日期）提供了一些方法。
+calendar是抽象类，并且构造器是private，可以通过getInstance实例化
+
+`Calendar c = Calendar.getInstance();`
+
+获取年：`c.get(Calendar.YEAR);`
+
+获取月：`c.get(Calendar.MONTH)+1;`月份从0开始的，所以要加1
+
+获取日：`c.get(Calendar.DAY_OF_MONTH);`
+
+获取时：`c.get(Calendar.HOUR);`12小时制`c.get(Calendar.HOUR_OF_DAY);`24小时制
+
+Calendar没有提供格式化的方法，所以日期格式需要自己拼接
+
+**第三代日期类**
+
+前面两代日期类的不足：
+JDK1.0中包含了一个java.util.Date类，但是它的大多数方法已经在JDK1.1引入Calendar类之后被弃用了，而Calendar也存在问题
+
+1. 可变性：像日期和时间这样的类应该是不可变的
+2. 偏移性：Date中的年份是从1900开始的，而月份都从0开始
+3. 格式化：格式化只对Date有用，Calendar则不行
+4. 此外，它们也不是线程安全的，不能处理润秒等（每隔2天，多出1s）。
+
+Jdk8加入第三代日期类，常见方法LocalDate(日期，年月日)、LocalTime（时间，时分秒），LocalDateTime（日期时间）
+
+```java
+LocalDateTime ldt = LocalDateTime.now();
+//DateTimeFormatter 格式日期类
+DateTimeFormatter dtf = DateTimeFormatter.ofpattern("yyyy-MM-dd HH:mm:ss");
+```
+
+**Instant 时间戳**类似于Date提供了一系列和Date类转换的方式
+
+Instant --》Date：Date date = Date.from(instant);
+
+Date ---> Instant: Instant instant = date.toInstant();
+
+第三代日期类更多方法
+
+- LocalDateTime类
+- MonthDay类：检查重复事件
+- 是否有闰年
+- 增加日期的某个部分
+- 使用plus方法测试增加时间的某个部分
+- 使用minus方法测试查看一年前和一年后的日期
+
+## 集合
+
+前面我们保存多个数据使用的是数组，那么数组有那些不足的地方：
+
+1. 长度开始时必须指定，而且一旦指定，不能更改
+2. 保存的必须是同一类型的元素
+3. 使用数组进行增加/删除元素比较麻烦
+
+集合的好处：
+
+- 可以动态保存任意多个对象，使用比较方便
+- 提供了一系列方便的操作对象的方法：add，remove，set，get等
+- 使用集合，添加，删除新元素比较简洁
+
+### 集合的框架体系
+
+单列集合：存放的都是单个的对象
+
+![QQ20251014-165627](.\img\QQ20251014-165627.png)
+
+双列集合：存放的都是键值对
+
+![QQ20251014-165905](.\img\QQ20251014-165905.png)
+
+500
