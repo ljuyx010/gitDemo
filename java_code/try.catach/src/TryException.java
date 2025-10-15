@@ -1,7 +1,4 @@
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * @author 混江龙
@@ -9,6 +6,7 @@ import java.util.Scanner;
  * @time 2025/10/11 09:48
  */
 public class TryException {
+    @SuppressWarnings({"all"})
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 //        String a ;
@@ -57,7 +55,7 @@ public class TryException {
         });
         System.out.println(Arrays.toString(books));
 
- */
+
         System.out.println("请输入姓名：");
         //注意，这里不能使用scanner.next()，因为next()方法会自动去掉空格
         //而nextLine()方法会自动保留空格
@@ -78,6 +76,30 @@ public class TryException {
             }
         }
         System.out.println(newName);
+
+ */
+        List books = new ArrayList();
+        books.add(new Book("红楼梦",100.0,"曹雪芹"));
+        books.add(new Book("西游记",120.0,"吴承恩"));
+        books.add(new Book("水浒传",70.0,"施耐庵"));
+        books.add(new Book("三国演义",80.0,"罗贯中"));
+        sort(books);
+        for (Object o :books) {
+            System.out.println(o.toString());
+        }
+
+    }
+    @SuppressWarnings({"all"})
+    public static void sort(List list){
+        for(int i=0;i<list.size();i++){
+            for (int j = i+1; j < list.size(); j++) {
+                if(((Book)list.get(i)).getPrice() > ((Book)list.get(j)).getPrice()){
+                    Book temp = (Book)list.get(i);
+                    list.set(i,list.get(j));
+                    list.set(j,temp);
+                }
+            }
+        }
     }
 
 }
@@ -85,9 +107,11 @@ public class TryException {
 class Book{
     private String name;
     private Double price;
-    public Book(String name, Double price) {
+    private String author;
+    public Book(String name, Double price,String author) {
         this.name = name;
         this.price = price;
+        this.author = author;
     }
     public String getName() {
         return name;
@@ -98,7 +122,7 @@ class Book{
 
     @Override
     public String toString() {
-        return "[name=" + name + ", price=" + price + "]";
+        return "名称：" + name + "\t" + "价格：" + price + "\t" + "作者：" + author;
     }
 
 }
