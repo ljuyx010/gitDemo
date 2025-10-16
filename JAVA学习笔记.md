@@ -2873,4 +2873,65 @@ ArrayList的底层操作机制分析
 2. 当创建ArrayList对象时，如果使用的是无参构造器，则初始elementDate容量为0，第一次添加，则扩容elementDate为10，如需再次扩容，则扩容elementDate为1.5倍。
 3. 如果使用的是指定大小的构造器，则初始elementDate容量为指定大小，如果需要扩容，则直接扩容elementDate为1.5倍。
 
-510
+### Vector类分析
+
+Vector类的定义
+`public class Vector extends AbstrctList implements List,RandomAccess,Cloneable,Serializable{}`
+
+Vector底层也是一个对象数组，`protected Object[] elementData;`
+
+Vector是线程同步的，即线程安全，Vector类的操作方法带有`synchronizedd`
+
+在开发中，需要线程同步安全时，考虑使用Vector
+
+**Vector和ArrayList的比较**
+
+|           | 底层结构 | 版本   | 线程，效率     | 扩容                                                       |
+| --------- | -------- | ------ | -------------- | ---------------------------------------------------------- |
+| ArrayList | 可变数组 | jdk1.2 | 不安全，效率高 | 如果有参构造1.5倍<br />如果是无参，第一次10，以后1.5倍     |
+| Vector    | 可变数组 | jdk1.0 | 安全，效率不高 | 如果是无参，默认10，满后2倍<br />如果指定大小，则每次2倍扩 |
+
+### LinkedList类分析
+
+LinkedList底层实现了双向链表和双端队列特定
+
+可以添加任意元素（元素可以重复），包括null
+
+线程不安全，没有实现同步和互斥
+
+LinkedList的底层机制：
+
+1. LinkedList底层维护了一个双向链表
+2. LinkedList中维护了两个属性first和last分别指向首节点和尾节点
+3. 每个节点（Node对象），里面又维护了prev，next，item三个属性，其中通过prev指向前一个，通过next指向后一个节点，最终实现双向链表
+4. 所以LinkedList的元素的添加和删除，不是通过数组完成的，相对来说效率较高
+
+ArrayList和LinkedList的比较
+
+|            | 底层结构 | 增删效率           | 改查效率 |
+| ---------- | -------- | ------------------ | -------- |
+| ArrayList  | 可变数组 | 较低，数组扩容     | 较高     |
+| LinkedList | 双向链表 | 较高，通过链表追加 | 较低     |
+
+如何选择ArrayList和LinkedList：
+
+1. 如果我们改查的操作多，选择ArrayList
+2. 如果我们增删的操作多，选择LinkedList
+3. 一般来说，在程序中，80%-90%都是查询，因此大部分情况下会选择ArrayList
+4. 在一个项目中，根据业务灵活选择，也可能这样，一个模块使用的是ArrayList，另外一个模块是LinkedList，也就是说，要根据业务选择
+
+### Set接口
+
+Set接口：1.无序（添加和取出的顺序不一致，取出的顺序是固定的），没有索引 2.不允许重复元素，所以最多包含一个null，3.jdk api中set接口的实现类常用的有HashSet和TreeSet
+
+Hashset实现了Set接口
+
+HashSet实际上是HashMap
+
+可以存放null只，但只能有一个
+
+HashSet不保证元素是有序的，取决于hash后，再确定索引的结果（即不保证存放元素的顺序和取出的一致）
+
+不能有重复元素/对象（new的内容一样的对象是不同的对象）
+
+519
