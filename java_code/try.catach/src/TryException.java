@@ -77,7 +77,7 @@ public class TryException {
         }
         System.out.println(newName);
 
- */
+
         List books = new ArrayList();
         books.add(new Book("红楼梦",100.0,"曹雪芹"));
         books.add(new Book("西游记",120.0,"吴承恩"));
@@ -100,7 +100,18 @@ public class TryException {
                 }
             }
         }
+
+ */
+        Employee a = new Employee("张三",10000.0,new MyDate(1990,1,1));
+        Employee b = new Employee("李四",10000.0,new MyDate(1990,1,1));
+        Employee c = new Employee("张三",10000.0,new MyDate(1990,1,1));
+        HashSet<Employee> hashSet = new HashSet<>();
+        hashSet.add(a);
+        hashSet.add(b);
+        hashSet.add(c);
+        System.out.println("hashSet = "+hashSet);
     }
+
 
 }
 
@@ -125,4 +136,51 @@ class Book{
         return "名称：" + name + "\t" + "价格：" + price + "\t" + "作者：" + author;
     }
 
+}
+
+class Employee{
+    private String name;
+    private double salary;
+    private MyDate brithday;
+    public Employee(String name, double salary, MyDate brithday) {
+        this.name = name;
+        this.salary = salary;
+        this.brithday = brithday;
+    }
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "name='" + name + '\'' +
+                ", salary=" + salary +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Employee employee = (Employee) o;
+        return Objects.equals(name, employee.name) && Objects.equals(brithday.toString(), employee.brithday.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, brithday.toString());
+    }
+}
+class MyDate{
+    private int year;
+    private int month;
+    private int day;
+    public MyDate(int year, int month, int day) {
+        this.year = year;
+        this.month = month;
+        this.day = day;
+    }
+    public String toString() {
+        return year + "年" + month + "月" + day + "日";
+    }
 }

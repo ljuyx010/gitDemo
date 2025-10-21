@@ -2924,7 +2924,7 @@ ArrayList和LinkedList的比较
 
 Set接口：1.无序（添加和取出的顺序不一致，取出的顺序是固定的），没有索引 2.不允许重复元素，所以最多包含一个null，3.jdk api中set接口的实现类常用的有HashSet和TreeSet
 
-Hashset实现了Set接口
+**Hashset**实现了Set接口
 
 HashSet实际上是HashMap
 
@@ -2934,4 +2934,82 @@ HashSet不保证元素是有序的，取决于hash后，再确定索引的结果
 
 不能有重复元素/对象（new的内容一样的对象是不同的对象）
 
-519
+HashSet底层机制：
+
+HashSet的底层是hashMap，hashMap底层是（数组+链表+红黑树）
+
+1. HashSet底层是hashMap
+
+2. 添加一个元素时，先得到hash值，会转成-》索引值
+   2.1.第一次添加时，table数组扩容到16，临界值（threshold）是16*加载因子（loadFactor）0.75 = 12（添加12个元素就会扩容了）
+
+   2.2、如果table数组使用到了临界值12，就会扩容到16*2=32，新的临界值就是32\*0.75=24,依次类推
+
+3. 找到存储数据表table，看这个索引位置是否已经存放的有元素
+
+4. 如果没有，直接加入
+
+5. 如果有，调用equals（可以根据对象的equals()重写[ides快捷键alt+insert选择equals and hashcode]来确定判断标准）比较，如果相同，就放弃添加，如果不同，则添加到最后
+
+6. 在java8中，如果一条链表的元素个数达到TREEIFY_THRESHOLD(默认是8)，并且table的大小>=MIN_TREEIFY_THRESHOLD(默认64)，就会进行树化（红黑树），否则依然采用数组扩容机制
+
+```java
+//重写equals和hashcode案例
+public static void main(String[] args) {
+       Employee a = new Employee("张三",10000.0,new MyDate(1990,1,1));
+        Employee b = new Employee("李四",10000.0,new MyDate(1990,1,1));
+        Employee c = new Employee("张三",10000.0,new MyDate(1990,1,1));
+        HashSet<Employee> hashSet = new HashSet<>();
+        hashSet.add(a);
+        hashSet.add(b);
+        hashSet.add(c); //c 根据重新的规则，name和birthday相同则认为相同，故c不能写入，只能写入a和b
+        System.out.println("hashSet = "+hashSet);
+    }
+class Employee{
+    private String name;
+    private double salary;
+    private MyDate brithday;
+    public Employee(String name, double salary, MyDate brithday) {
+        this.name = name;
+        this.salary = salary;
+        this.brithday = brithday;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Employee employee = (Employee) o;
+        return Objects.equals(name, employee.name) && Objects.equals(brithday.toString(), employee.brithday.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, brithday.toString());
+    }
+}
+class MyDate{
+    private int year;
+    private int month;
+    private int day;
+    public MyDate(int year, int month, int day) {
+        this.year = year;
+        this.month = month;
+        this.day = day;
+    }
+    public String toString() {
+        return year + "年" + month + "月" + day + "日";
+    }
+}
+```
+
+**LinkedHashSet**是HashSet的子类
+
+LinkedHashSet底层是一个LinkedHashMap，底层维护了一个数组+双向链表
+
+LinkedHashSet根据元素的hashCode值来决定元素的存储位置，同时使用链表维护元素的次序，这使得元素看起来是以插入顺序保存的
+
+LinkedHashSet不允许添加重复元素
+
+### Map接口和常用方法
+
+530
