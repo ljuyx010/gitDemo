@@ -3381,4 +3381,67 @@ Component类提供了两个和绘图相关最重要的方法：
 2. 窗口的大小发生变化
 3. repaint函数被调用
 
-570
+### Graphics类
+
+graphics类可以理解为画笔，为我们提供了各种绘制图形的方法：
+
+1. 画直线：drawLine（int x1,int y1,int x2,int y2）
+2. 画矩形边框 drawRect(int x, int y,int width,int height)
+3. 画椭圆边框 drawOval(int x, int y,int width,int height)
+4. 填充矩形 fillRect(int x, int y,int width,int height)
+5. 填充椭圆 fillOval(int x,int y, int width, int height)
+6. 画图片 drawImage(Image img,int x,int y,...)
+7. 画字符串 drawString(String str,int x,int y) x,y 是string的左下角坐标
+8. 设置画笔的字体 setFont(Font font)
+9. 设置画笔的颜色 setColor(Color c)
+
+### java事件处理机制
+
+```java
+// 首先创建一个面板继承Jpanel类，引入键盘监听事件
+class Myanel extends JPanel implements KeyListener {
+    int x=100;
+    int y=100;
+    //myPanel对象就是一个画板
+    //Graphics g  Graphics类  画笔 提供了很多绘图的方法
+    public void paint(Graphics g){
+        super.paint(g); //调用父类的方法完成初始化
+        // 绘制一个圆形
+        g.drawOval(x,y,100,100);
+        //圆形的外框矩形的右上角坐标(10,10)  矩形的宽度100  高度100 就是一个圆形
+    }
+    //键盘输入事件
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+	//键盘按下事件
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if(e.getKeyCode()== KeyEvent.VK_DOWN){
+            //System.out.println("向下箭头键被按下");
+            y++;
+        }else if(e.getKeyCode()== KeyEvent.VK_UP){
+            y--;
+        }else if(e.getKeyCode()== KeyEvent.VK_LEFT){
+            x--;
+        }else if(e.getKeyCode()== KeyEvent.VK_RIGHT){
+            x++;
+        }
+        this.repaint(); //重绘图形
+    }
+	//键盘按键松开事件
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
+}
+
+//还需要在窗口中加入键盘监听事件,不然窗口中的面板获取不到监听事件
+mp = new Mypanel();
+this.addKeyListener(mp);
+```
+
+java事件处理是采取“委派事件模型”。当事件发生时，产生事件的对象，会把此“信息”传递给“事件的监听者”处理，这里所说的“信息”实际上就是java.awt.ent事件类库里某个类所创建的对象，把它称为“事件的对象”。
+
+576

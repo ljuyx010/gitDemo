@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 /**
  * @author 混江龙
@@ -12,29 +14,60 @@ public class Draw extends JFrame{
     //Graphics类  画笔 提供了很多的方法可以再画板上绘制图形
     public Draw(){
         //初始化窗口并把画板添加到窗口中
-        this.add(new Myanel());
+        this.add(new Tank());
         //设置窗口的标题
-        this.setTitle("绘制一个圆形");
+        this.setTitle("坦克大战");
         //设置窗口的大小
-        this.setSize(500,500);
+        this.setSize(1000,750);
 //        设置点击窗口关闭按钮时的操作  退出程序
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //设置窗口可见
         this.setVisible(true);
     }
     public static void main(String[] args) {
+
         new Draw();
+        //调用坦克类的方法画出坦克
+        Tank t = new Tank();
     }
 }
 // 首先创建一个面板
-class Myanel extends JPanel {
+class Myanel extends JPanel implements KeyListener {
+    int x=100;
+    int y=100;
     //myPanel对象就是一个画板
     //Graphics g  Graphics类  画笔 提供了很多绘图的方法
     public void paint(Graphics g){
         super.paint(g); //调用父类的方法完成初始化
         // 绘制一个圆形
-        g.drawOval(10,10,100,100);
+        g.drawOval(x,y,100,100);
         //圆形的外框矩形的右上角坐标(10,10)  矩形的宽度100  高度100 就是一个圆形
     }
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if(e.getKeyCode()== KeyEvent.VK_DOWN){
+            //System.out.println("向下箭头键被按下");
+            y++;
+        }else if(e.getKeyCode()== KeyEvent.VK_UP){
+            y--;
+        }else if(e.getKeyCode()== KeyEvent.VK_LEFT){
+            x--;
+        }else if(e.getKeyCode()== KeyEvent.VK_RIGHT){
+            x++;
+        }
+        this.repaint(); //重绘图形
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
 }
+
+
 
