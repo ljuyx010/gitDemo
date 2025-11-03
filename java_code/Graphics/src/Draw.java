@@ -8,29 +8,50 @@ import java.awt.event.KeyListener;
  * @version 1.0
  * @time 2025/10/27 15:53
  */
-public class Draw extends JFrame{
+public class Draw extends JFrame implements KeyListener{
     //JFrame对象就是一个窗口
     //panel对象就是窗口内的画板
     //Graphics类  画笔 提供了很多的方法可以再画板上绘制图形
     public Draw(){
+        MyPanel mp = new MyPanel();
         //初始化窗口并把画板添加到窗口中
-        this.add(new Tank());
+        this.add(mp);
         //设置窗口的标题
         this.setTitle("坦克大战");
         //设置窗口的大小
         this.setSize(1000,750);
-//        设置点击窗口关闭按钮时的操作  退出程序
+        //添加键盘监听事件
+        this.addKeyListener(mp);
+        // 设置点击窗口关闭按钮时的操作  退出程序
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //设置窗口可见
         this.setVisible(true);
     }
-    public static void main(String[] args) {
 
+    private void addKeyListener(Tank tk) {
+    }
+
+    public static void main(String[] args) {
         new Draw();
-        //调用坦克类的方法画出坦克
-        Tank t = new Tank();
+    }
+
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
     }
 }
+/*
 // 首先创建一个面板
 class Myanel extends JPanel implements KeyListener {
     int x=100;
@@ -67,7 +88,7 @@ class Myanel extends JPanel implements KeyListener {
     public void keyReleased(KeyEvent e) {
 
     }
-}
+}*/
 
 
 
