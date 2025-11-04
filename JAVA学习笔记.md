@@ -3444,4 +3444,235 @@ this.addKeyListener(mp);
 
 java事件处理是采取“委派事件模型”。当事件发生时，产生事件的对象，会把此“信息”传递给“事件的监听者”处理，这里所说的“信息”实际上就是java.awt.ent事件类库里某个类所创建的对象，把它称为“事件的对象”。
 
-578
+## 程序的进程线程
+
+进程是指运行中的程序，比如我们使用QQ，就启动了一个进程，操作系统就会为该进程分配内存空间，当我们使用迅雷，又启动了一个进程，操作系统将为迅雷分配新的内存空间。
+
+进程是程序的一次执行过程，或是正在运行的一个程序。是动态过程：有它自身的产生，存在和消亡的过程。
+
+**什么是线程？**
+
+线程是由进程创建的，是进程的一个实体。一个进程可以拥有多个线程。
+
+1. 单线程：同一个时刻，只允许执行一个线程
+
+2. 多线程：同一个时刻，可以执行多个线程，比如：一个QQ进程，可以同时多个聊天窗口，一个迅雷进程，可以同时下载多个文件
+3. 并发：同一个时刻，多个任务交替执行，造成一种“貌似同时”的错觉，简单的说，单核cpu实现的多任务就是并发。
+4. 并行：同一个时刻，多个任务同时执行。多核cpu可以实现并行。
+
+### 线程的使用
+
+使用线程的两种方法：
+
+1. 继承Thread类
+2. 实现Runnable接口
+
+```java
+//使用继承Thread类实现多线程
+public class Thread01 {
+    public static void main(String[] args) {
+        //创建一个Cat线程对象,可以当做线程来使用
+        Cat cat = new Cat();
+        //启动线程
+        cat.start();
+    }
+}
+//1.当一个类继承了Thread类，就可以当作线程来使用
+//2.重写run方法，实现自己的业务逻辑，线程启动后，会调用run方法
+//3.Thread类的run方法，是实现Runnable接口的run方法
+class Cat extends Thread {
+
+    @Override
+    public void run() {
+        int count = 0;
+        while (true) {
+            //重写run方法，实现自己的业务逻辑，线程启动后，会调用run方法
+            System.out.println("喵喵，我是一个小猫咪" + count++);
+            //让线程休眠1秒，模拟喵喵喵的过程
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            if (count == 10) { //当count等于10时，跳出循环,即结束线程
+                break;
+            }
+        }
+
+    }
+}
+```
+
+真正让程序实现多线程的不是Thread类的run方法，而是Thread类中的start0()方法，这个方法是一个native(本地)方法，直接由jvm机调用，其他不能使用。
+
+```java
+//使用实现Runnable接口的方法实现多线程
+public class Thread02 {
+    public static void main(String[] args) {
+        //创建一个线程对象，把dog对象（实现了Runnable接口）作为参数传递
+        Thread thread = new Thread(new Dog());
+        //启动线程
+        thread.start();
+    }
+}
+
+class Dog implements Runnable {
+
+    @Override
+    public void run() {
+        int count = 0;
+        while (true) {
+            System.out.println("小狗汪汪叫" + (++count) +"线程名称="+Thread.currentThread().getName());
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                //获取中断异常
+                throw new RuntimeException(e);
+            }
+            if (count == 10) {
+                break;
+            }
+        }
+    }
+}
+```
+
+**继承Thread vs 实现Runnable的区别**
+
+1. 从java的设计来看，通过继承Thread或者实现Runable接口来创建线程本质上没有区别，从jdk帮助文档我们可以看到Thread类本身就实现了Runnable接口。
+2. 实现Runnable接口方式更加适合多个线程共享一个资源的情况，并且避免了单继承的限制。建议使用Runnable方式。
+
+### 线程终止
+
+1. 当线程完成任务后，会自动退出
+2. 还可以通过使用变量来控制run方法退出的方式停止线程，即通知方式
+
+### 线程常用方法
+
+1. setName：设置线程名称，使之与参数name相同
+2. getName：返回该线程的名称
+3. start：使该线程开始执行
+4. run：调用线程对象的run方法
+5. setPriority：更改线程的优先级
+6. getPriority：获取线程的优先级
+7. sleep：在指定的毫秒数内让当前正在执行的线程休眠
+8. interrupt：中断线程
+
+注意事项和细节
+
+1. start底层会创建新的线程，调用run，run就是一个简单的方法调用，不会启动新线程。
+2. 线程优先级的范围（MAX_PRIORITY =10,MIN_PRIORITY=1,NORM_PRIORITY=5）
+3. interrupt 中断线程，但并没有真正的结束线程。所以一般用于中断正在休眠的线程，使线程提前继续执行。
+4. sleep线程的静态方法，使当前线程休眠
+
+常用方法2：
+
+9. yield：线程的礼让，让出cpu，让其他线程执行，但礼让的时间不确定，所以也不一定礼让成功
+10. join：线程的插队。插队的线程一旦插队成功，则肯定先执行完插入的线程所有的任务
+
+### 用户线程和守护线程
+
+用户线程：也叫工作线程，当线程的任务执行完或通知方式结束
+
+守护线程：一般是为工作线程服务的，当所有的用户线程结束，守护线程自动结束
+
+常见的守护线程：垃圾回收机制
+
+```java
+//把线程设置成守护线程
+DaemonThread t = new t();
+t.setDeamon(true); //设置成守护线程,主线程结束后，守护线程就自动结束
+t.start();
+```
+
+### 线程的生命周期
+
+Thread.state 线程的状态：
+
+- NEW  尚未启动的线程
+- RUNNABLE 在jvm机中执行的线程（此状态中又有Ready和Running两种状态）
+- BLOCKED  被阻塞等待监视器锁定的线程
+- WAITING  正在等待另一个线程执行特定动作的线程
+- TIME_WAITING 正在等待另一个线程执行动作达到等待时间的线程（超时等待）
+- TERMINATED 已退出的线程
+
+![QQ20251104-161858](.\img\QQ20251104-161858.png)
+
+### Synchronized
+
+线程同步机制
+
+1.在多线程编程，一些敏感数据不允许被多个线程同时访问，次数就使用同步访问技术，保证数据在任何同一时刻，最多有一个线程访问，以保证数据的完整性
+
+2.也可以这样理解：线程同步，即当有一个线程在对内存进行操作时，其他线程都不能对这个内存地址进行操作，直到该线程完成操作，其他线程才能对该内存地址进行操作。
+
+同步具体方法
+
+1.同步代码块
+
+```java
+synchronized (对象){ //非静态代码块可以对象可以用this或类名，静态代码块只能用类名
+    //需要被同步代码
+}
+```
+
+2.synchronized还可以放在方法声明中，表示整个方法为同步方法
+
+```java
+public synchronized void m(String name){
+    //需要被同步的代码
+}
+```
+
+同步方法来解决超卖问题：
+
+```java
+class Sall extends Thread {
+    private static int count = 100; //共有100张票
+    private boolean loop =  true; // 通知变量，控制退出线程
+    //small方法设为synchronized，确保在多线程环境下，每次只能有一个线程执行small方法
+    private synchronized void small() {
+        if(count<=0){
+            loop = false;
+            return;
+        }
+        System.out.println(Thread.currentThread().getName()+"卖出一张票，还有" + (--count) + "张票");
+    }
+    @Override
+    public void run() {
+        while (loop) {
+            small();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}
+```
+
+### 互斥锁
+
+1.java语言中，引入了对象互斥锁的概念，来保证共享数据操作的完整性。
+
+2.每个对象都对应于一个可称为“互斥锁”的标记，这个标记用来保证在任一时刻，只有一个线程访问该对象。
+
+3.关键字synchronized来与对象的互斥锁联系，当某个对象用synchronized修饰时，表明该对象在任一时刻只能由一个线程访问
+
+4.同步的局限性：导致程序的执行效率要降低
+
+5.同步方法（非静态的）的锁可以是this，也可以是其他对象（要求是同一个对象）
+
+6.同步方法（静态的）的锁为当前类本身。
+
+注意事项和细节：
+
+1. 同步方法如果没有使用static修饰，默认锁对象为this
+2. 如果方法使用static修饰，默认锁对象：当前类.class
+3. 实现的落地步骤：
+   - 需要先分析上锁的代码
+   - 选择同步代码块或同步方法
+   - 要求多个线程的锁对象为同一个即可
+
+595

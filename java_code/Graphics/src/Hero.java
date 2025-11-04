@@ -18,7 +18,7 @@ public class Hero extends Tank {
 
     //向下移动
     public void moveDown() {
-        if (this.getY() + this.getSpeed() < 750) {
+        if (this.getY() + this.getSpeed() < 650) {
             this.setY(this.getY() + this.getSpeed());
         }
     }
@@ -32,7 +32,7 @@ public class Hero extends Tank {
 
     //向右移动
     public void moveRight() {
-        if (this.getX() + this.getSpeed() < 1000) {
+        if (this.getX() + this.getSpeed() < 920) {
             this.setX(this.getX() + this.getSpeed());
         }
     }

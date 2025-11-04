@@ -7,28 +7,24 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Vector;
+
 //坦克大战的绘图区域
 public class MyPanel extends JPanel implements KeyListener {
     //定义玩家坦克
     Hero myHero=null;
-    //定义敌人坦克
-    Tank enemyTank1=null;
-    Tank enemyTank2=null;
-    Tank enemyTank3=null;
+    //定义敌人坦克放入到vector
+    Vector<EnemyTank> enemyTanks = new Vector<>();
+    //定义敌人坦克的数量
+    int enemyTankSize = 3;
     public MyPanel(){
         //初始化玩家坦克
         myHero=new Hero(100,600);
         myHero.setSpeed(2);
         //初始化敌人坦克
-        enemyTank1=new Tank(200,10);
-        enemyTank1.setType(1);
-        enemyTank1.setDirection(2);
-        enemyTank2=new Tank(300,10);
-        enemyTank2.setType(1);
-        enemyTank2.setDirection(2);
-        enemyTank3=new Tank(400,10);
-        enemyTank3.setType(1);
-        enemyTank3.setDirection(2);
+        for (int i = 0; i < enemyTankSize; i++) {
+            enemyTanks.add(new EnemyTank(200+i*100,10));
+        }
     }
     //myPanel对象就是一个画板
     //Graphics g  Graphics类  画笔 提供了很多绘图的方法
@@ -41,9 +37,9 @@ public class MyPanel extends JPanel implements KeyListener {
         g.fillRect(0,0,1000,750);
         //画出玩家坦克
         drawTank(myHero.getX(),myHero.getY(),g,myHero.getDirection(),myHero.getType());
-        drawTank(enemyTank1.getX(),enemyTank1.getY(),g,enemyTank1.getDirection(),enemyTank1.getType());
-        drawTank(enemyTank2.getX(),enemyTank2.getY(),g,enemyTank2.getDirection(),enemyTank2.getType());
-        drawTank(enemyTank3.getX(),enemyTank3.getY(),g,enemyTank3.getDirection(),enemyTank3.getType());
+        for (EnemyTank enemyTank : enemyTanks) {
+            drawTank(enemyTank.getX(),enemyTank.getY(),g,enemyTank.getDirection(),enemyTank.getType());
+        }
     }
 
     //画出坦克
