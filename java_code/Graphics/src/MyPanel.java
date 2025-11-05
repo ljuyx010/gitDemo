@@ -10,7 +10,7 @@ import java.awt.event.KeyListener;
 import java.util.Vector;
 
 //坦克大战的绘图区域
-public class MyPanel extends JPanel implements KeyListener {
+public class MyPanel extends JPanel implements KeyListener,Runnable {
     //定义玩家坦克
     Hero myHero=null;
     //定义敌人坦克放入到vector
@@ -40,6 +40,8 @@ public class MyPanel extends JPanel implements KeyListener {
         for (EnemyTank enemyTank : enemyTanks) {
             drawTank(enemyTank.getX(),enemyTank.getY(),g,enemyTank.getDirection(),enemyTank.getType());
         }
+        //画出玩家子弹
+        drawShot(myHero,g);
     }
 
     //画出坦克
@@ -87,6 +89,21 @@ public class MyPanel extends JPanel implements KeyListener {
         //g.fillRect(100,100,50,50);
     }
 
+    // 画子弹
+    public void drawShot(Hero hero,Graphics g){
+        if(hero.getShot()!=null){
+           Shot shot =  hero.getShot();
+           if(shot.islive()){
+               if(shot.getDirection() == 0 || shot.getDirection() == 2){
+                   g.draw3DRect(shot.getX(), shot.getY(), 2, 5,false);
+               }else{
+                   g.draw3DRect(shot.getX(), shot.getY(), 5, 2,false);
+               }
+           }
+        }
+    }
+
+
     @Override
     public void keyTyped(KeyEvent e) {
 
@@ -111,11 +128,27 @@ public class MyPanel extends JPanel implements KeyListener {
             myHero.setDirection(3);
             myHero.moveLeft();
         }
+        if(e.getKeyCode()== KeyEvent.VK_0){
+            //System.out.println("0键被按下");
+            myHero.shotEnemy();
+        }
         this.repaint(); //重绘图形
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
 
+    }
+    @Override
+    public void run() {
+        // 每隔100毫秒重绘一次显示子弹轨迹
+        while(true){
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            this.repaint();
+        }
     }
 }

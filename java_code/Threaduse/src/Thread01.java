@@ -15,11 +15,11 @@ public class Thread01 {
 //2.重写run方法，实现自己的业务逻辑，线程启动后，会调用run方法
 //3.Thread类的run方法，是实现Runnable接口的run方法
 class Cat extends Thread {
-
+    private boolean loop = true;
     @Override
     public void run() {
         int count = 0;
-        while (true) {
+        while (loop) {
             //重写run方法，实现自己的业务逻辑，线程启动后，会调用run方法
             System.out.println("喵喵，我是一个小猫咪" + count++);
             //让线程休眠1秒，模拟喵喵喵的过程
@@ -34,11 +34,16 @@ class Cat extends Thread {
         }
 
     }
+
+    public void setLoop(boolean loop) {
+        this.loop = loop;
+    }
 }
 
 class Sall extends Thread {
     private static int count = 100;
     private boolean loop =  true;
+
     //small方法设为synchronized，确保在多线程环境下，每次只能有一个线程执行small方法
     private synchronized void small() {
         if(count<=0){

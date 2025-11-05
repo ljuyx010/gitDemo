@@ -26,6 +26,8 @@ public class Draw extends JFrame implements KeyListener{
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //设置窗口可见
         this.setVisible(true);
+        //开启线程
+        new Thread(mp).start();
     }
 
     private void addKeyListener(Tank tk) {
