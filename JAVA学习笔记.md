@@ -3696,4 +3696,4 @@ class Sall extends Thread {
 
    提示：应尽量避免使用suspend()和resume()来控制线程，方法不再推荐使用
 
-604
+607

@@ -19,7 +19,7 @@ public class Draw extends JFrame implements KeyListener{
         //设置窗口的标题
         this.setTitle("坦克大战");
         //设置窗口的大小
-        this.setSize(1000,750);
+        this.setSize(1030,790);
         //添加键盘监听事件
         this.addKeyListener(mp);
         // 设置点击窗口关闭按钮时的操作  退出程序
