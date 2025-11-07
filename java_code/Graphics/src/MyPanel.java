@@ -12,6 +12,7 @@ import java.util.Vector;
 
 //坦克大战的绘图区域
 public class MyPanel extends JPanel implements KeyListener,Runnable {
+    private boolean isRunning = true;
     //定义玩家坦克
     Hero myHero=null;
     //定义敌人坦克放入到vector
@@ -163,6 +164,40 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
         }
     }
 
+    // 碰撞检测
+    public boolean isCollide(Tank tank1,Vector<EnemyTank> tanks){
+        // 遍历敌人坦克
+        for (EnemyTank enemyTank : enemyTanks) {
+            int enemyX = enemyTank.getX();
+            int enemyY = enemyTank.getY();
+            // 检测玩家坦克和敌人坦克是否碰撞
+            if (!tank1.equals(enemyTank) && enemyTank.isLive() && tank1.isLive()) {
+                if ((tank1.getDirection() == 0 || tank1.getDirection() == 2) && (enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2)) {
+                    // 玩家坦克和敌人坦克都是上下移动，检测是否碰撞
+                    if (enemyTank.getX() > tank1.getX() - 40 && enemyTank.getX() < tank1.getX() + 40 && enemyTank.getY() > tank1.getY() - 60 && enemyTank.getY() < tank1.getY() + 60) {
+                        return true;
+                    }
+                } else if ((tank1.getDirection() == 1 || tank1.getDirection() == 3) && (enemyTank.getDirection() == 1 || enemyTank.getDirection() == 3)) {
+                    // 玩家坦克和敌人坦克都是左右移动，检测是否碰撞
+                    if (enemyTank.getX() > tank1.getX() - 60 && enemyTank.getX() < tank1.getX() + 60 && enemyTank.getY() > tank1.getY() -40  && enemyTank.getY() < tank1.getY() + 40) {
+                        return true;
+                    }
+                } else if ((tank1.getDirection() == 1 || tank1.getDirection() == 3) && (enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2)) {
+                    // 玩家坦克左右和敌人坦克上下移动，检测是否碰撞
+                    if (enemyTank.getX() > tank1.getX() -60 && enemyTank.getX() < tank1.getX() + 100 && enemyTank.getY() > tank1.getY()- 40 && enemyTank.getY() < tank1.getY() + 100) {
+                        return true;
+                    }
+                } else {
+                    // 玩家坦克上下和敌人坦克左右移动，检测是否碰撞
+                    if (enemyTank.getX() > tank1.getX() - 40 && enemyTank.getX() < tank1.getX() + 100 && enemyTank.getY() > tank1.getY() - 60 && enemyTank.getY() < tank1.getY() + 100) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public void keyTyped(KeyEvent e) {
 
@@ -202,6 +237,16 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
     public void run() {
         // 每隔100毫秒重绘一次显示子弹轨迹
         while(true){
+            if (!isRunning) {
+                //玩家坦克死亡游戏结束
+                //break;
+            }
+            // 玩家坦克和敌人坦克碰撞检测
+            if(isCollide(myHero,enemyTanks)){
+                myHero.setLive(false); // 玩家坦克死亡
+                bombs.add(new Bomb(myHero.getX(), myHero.getY())); // 玩家坦克死亡后，在其位置添加一个爆炸效果
+                isRunning = false; // 游戏结束
+            }
             // 并检测是否有玩家坦克的子弹集合击中敌人坦克
             if(myHero.getShot() != null) {
                 // 遍历玩家所有的子弹
@@ -244,6 +289,11 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
             myHero.rmoveShot(); // 从玩家坦克的子弹集合中移除死亡的子弹
             //遍历敌人坦克
             for (EnemyTank enemyTank : enemyTanks) {
+                // 敌人坦克和其他坦克碰撞检测
+//                boolean peng = isCollide(enemyTank,enemyTanks);
+//                // 不能直接在enemyTanks上修改属性，因为在循环中修改集合，会导致ConcurrentModificationException异常
+//                enemyTanks.get(enemyTanks.indexOf(enemyTank)).setPeng(peng); // 本坦克停止移动
+                enemyTank.haveOtherTank(enemyTanks);
                 //遍历敌人坦克的子弹
                 Iterator<Shot> shotIterator = enemyTank.shots.iterator();
                 while (shotIterator.hasNext()) {
@@ -256,13 +306,15 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
                         // 敌人坦克的子弹击中玩家坦克
                         myHero.setLive(false); // 玩家坦克死亡
                         bombs.add(new Bomb(myHero.getX(), myHero.getY())); // 敌人坦克的子弹击中玩家坦克后，在其位置添加一个爆炸效果
+                        isRunning = false; // 游戏结束
                     } else if ((myHero.getDirection() == 1 || myHero.getDirection() == 3) && shXto >= myHero.getX() && shXto <= myHero.getX() + 60 && shYto >= myHero.getY() && shYto <= myHero.getY() + 40 && shotIslive) {
                         // 敌人坦克的子弹击中玩家坦克
                         myHero.setLive(false); // 玩家坦克死亡
                         bombs.add(new Bomb(myHero.getX(), myHero.getY())); // 敌人坦克的子弹击中玩家坦克后，在其位置添加一个爆炸效果
+                        isRunning = false; // 游戏结束
                     }
                 }
-                enemyTank.rmoveShot(); // 从敌人坦克的子弹集合中移除死亡的子弹
+
             }
 
 
@@ -271,6 +323,7 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            //重绘整个面板
             this.repaint();
         }
     }

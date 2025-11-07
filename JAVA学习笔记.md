@@ -3696,4 +3696,99 @@ class Sall extends Thread {
 
    提示：应尽量避免使用suspend()和resume()来控制线程，方法不再推荐使用
 
-607
+## IO流
+
+什么是文件
+
+文件对我们并不陌生，文件是保存数据的地方，比如我们经常使用的word文档，txt文件，都是文件，它即可以保存一张图片，也可以保存视频，声音。
+
+**文件流**
+
+文件在程序中是以流的形式来操作的
+
+流：数据在数据源（文件）和程序（内存）之间经历的路径
+
+输入流：数据从数据源（文件）到程序（内存）的路径
+
+输出流：数据从程序（内存）到数据源（文件）的路径
+
+**常用的文件操作**
+
+- 创建文件对象相关构造器和方法
+
+  相关方法：
+  new File(String pathname) //根据路径构建一个File对象
+
+  new File(File parent,String child) //根据父目录文件+子路径构架
+
+  new File(String parent,String child)  //根据父目录+子路径构架
+
+  createNewFile  创建新文件
+
+- 获取文件的相关信息
+  getName （文件名）、getAbsolutePath（绝地路径）、getParent（父目录）、length（文件大小字节）、exists（是否存在）、isFile（是否是文件）、isDirectory（是否是目录）
+
+- 目录的操作和文件删除
+  mkdir 创建一级目录
+  mkdirs 创建多级目录
+
+  delete 删除空目录或文件
+
+### IO流原理及流的分类
+
+1. I/O是Input/output的缩写，I/O技术是非常实用的技术，用于处理数据传输，如读写文件，网络通信等
+2. java程序中，对于数据的输入/输出操作以“流（stream）”的方式进行。
+3. java.io包下提供了各种“流”类和接口，用以获取不同种类的数据，并通过方法输入或输出数据
+4. 输入Input：读取外部数据（磁盘，光盘等存储设备的数据）到程序（内存）中。
+5. 输出Output：将程序（内存）数据输出到磁盘，光盘等存储设备中。
+
+**流的分类**
+
+按操作数据单位不同分为：字节流（8bit）【二进制文件无损】，字符流（按字符）【文本文件速度快】。
+
+按数据流的流向不同分为：输入流，输出流
+
+按流的角色的不同分为：节点流，处理流/包装流
+
+| 抽象基类 | 字节流       | 字符流 |
+| -------- | ------------ | ------ |
+| 输入流   | InputStream  | Reader |
+| 输出流   | OutputStream | Writer |
+
+java的io流共涉及40多个类，实际上非常规则，都是从如上4个抽象基类派生的
+
+由这四个类派生出来的资料名称都是以其父类名作为子类名后缀。
+
+### InputStream
+
+字节输入流，InputStream抽象类是所有字节输入流的超类
+
+InputStream常用的子类：
+
+1. FileInputStream ：文件输入流
+2. BufferedInputStream：缓冲字节输入流
+3. ObjectInputStream：对象字节输入流
+
+### FileReader和FileWriter
+
+FileReader和FileWriter是字符流，即按照字符来操作io
+
+- FileReader相关方法：
+  1. new FileReader(File/String)
+  2. read：每次读取单个字符，返回该字符，如果到文件末尾返回-1
+  3. read(char[])：批量读取多个字符到数组，返回读取到的字符数，如果到文件末尾返回-1
+  4. 相关Api：
+      new String(char[])：将char[]转换成String
+      new String(char[],off,len)：将char[]的指定部分转换成String
+- FileWriter常用方法
+  1. new FileWriter(File/String)：覆盖模式，相当于流的指针在首端
+  2. new FileWriter(File/String,true)：追加模式，相当于流的指针在尾端
+  3. write(int)：写入单个字符
+  4. write(char[])：写入指定数组
+  5. wirte(char[],off,len)：写入指定数组的指定部分
+  6. write(string)：写入整个字符串
+  7. wirte(string,off,len)：写入字符串的指定部分
+  8. 相关Api，String类：toCharArray：将String转换成char[]
+  9. 注意：FileWriter使用后，必须要关闭（close）或刷新（Flush），否则写入不到指定的文件！
+
+620
