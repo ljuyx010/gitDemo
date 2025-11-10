@@ -3769,6 +3769,35 @@ InputStream常用的子类：
 2. BufferedInputStream：缓冲字节输入流
 3. ObjectInputStream：对象字节输入流
 
+```java
+public static void main(String[] args) {
+        String path = "D:\\WWW\\gitDemo\\java_code\\IO\\src\\File.txt";
+        FileOutputStream fileOutputStream = null;  //定义一个空的文件输出流对象
+
+        try {
+            fileOutputStream = new FileOutputStream(path);
+            //写入一个字符a
+            //fileOutputStream.write('a');
+            //写入字符串
+            String str = "Hello World";
+            //将字符串转换为字节数组并写入文件
+            fileOutputStream.write(str.getBytes());
+            //从索引0开始写入字符串的所有字节
+            fileOutputStream.write(str.getBytes(),0,str.length());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }finally {
+            try {
+                fileOutputStream.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+```
+
+
+
 ### FileReader和FileWriter
 
 FileReader和FileWriter是字符流，即按照字符来操作io
@@ -3789,6 +3818,210 @@ FileReader和FileWriter是字符流，即按照字符来操作io
   6. write(string)：写入整个字符串
   7. wirte(string,off,len)：写入字符串的指定部分
   8. 相关Api，String类：toCharArray：将String转换成char[]
-  9. 注意：FileWriter使用后，必须要关闭（close）或刷新（Flush），否则写入不到指定的文件！
+  9. 注意：FileWriter使用后，必须要**关闭（close）或刷新（Flush）**，否则写入不到指定的文件！
 
-620
+```java
+//复制文件到其他地方
+public static void main(String[] args) {
+        String path = "D:\\WWW\\gitDemo\\java_code\\IO\\src\\File.txt";
+        String path2 = "D:\\WWW\\gitDemo\\java_code\\IO\\src\\Filecopy.txt";
+        FileReader fileReader = null;
+        FileWriter fileWriter = null;
+        try{
+            // 以默认模式创建文件读取流
+            fileReader = new FileReader(path);
+            // 以追加模式创建文件写入流
+            fileWriter = new FileWriter(path2,true);
+            // 读取文件内容
+            char[] buffer = new char[1024];
+            int length;
+            // 循环读取文件内容，直到读取到文件末尾
+            while((length = fileReader.read(buffer)) != -1){
+                try{
+                    // 写入读取到的字符数组内容
+                    fileWriter.write(buffer,0,length);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }finally {
+            if(fileReader != null){
+                try {
+                    // 关闭文件读取流
+                    fileReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if(fileWriter != null){
+                try {
+                    // 关闭文件写入流
+                    fileWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+```
+
+### 节点流和处理流
+
+节点流可以从一个特定的数据源**读写数据**，如FileReader、FileWriter
+
+处理流（也叫包装流）是“连接”在已存在的流（节点流或处理流）之上，为程序提供更为强大的读写功能，也更加灵活。如BufferedReader，BufferedWriter【其原理是，例如bufferReader类内定义了一个Reader属性，即可以封装任意一个节点流，只要它是Reader的子类就行】
+
+节点流和处理流的区别和联系
+
+1. 节点奖是底层流/低级流，直接根数据源相接。
+2. 处理流包装节点流，即可以消除不同节点流的实现差异，也可以提供更方便的方法来完成输入输出。
+3. 处理流（也叫包装流）对节点流进行包装，使用了修饰器设计模式，不会直接与数据源相连
+
+处理流的功能注意提现在以下两个方面：
+
+1. 性能的提高：主要以增加缓冲的方式来提高输入输出的效率。
+2. 操作的便捷：处理流可能提供了一系列便捷的方法来一次输入输出大批量的数据，使用更加灵活方便
+
+**处理流BuffererReader和BufferedWriter**
+
+BufferedReader和BufferedWriter属于字符流，是按照字符来读取数据的，关闭处理流时，只需要关闭外出流即可（即关闭buffer即可，它会自动关闭传入的节点流）。
+
+BufferedInputStream 和 BufferedOutputStream是字节流，在创建BufferedInputStream时，会创建一个内部缓冲区数组。
+
+```java
+// 使用BufferedReader和BufferedWriter拷贝数据
+public static void main(String[] args){
+    //注意：BufferedReader和BufferedWriter是通过字符操作，不要去操作二进制文件，可能造成文件损坏
+    String srcFilePath = "D:\\WWW\\gitDemo\\java_code\\IO\\src\\File.txt";
+    String srcFilePath2 = "D:\\WWW\\gitDemo\\java_code\\IO\\src\\File2.txt";
+    BufferedReader br = null;
+    BufferedWriter bw = null;
+    String line;
+    try{
+        br = new BufferedReader(new FileReader(srcFilePath));
+        bw = new BufferedWriter(new FileWriter(srcFilePath2));
+        // readLine 读取一行内容,但是没有换行，读取到没有内容就返回null
+        while((line = br.readLine())!=null){
+            //每读取一行，就写入
+            bw.write(line);
+            // 插入一个换行
+            bw.newLine();
+        }
+    }catch(Exception e){
+       e.printStackTrace();
+    }finally{
+        if(br!=null){
+            br.close();
+        }
+        if(bw!=null){
+            bw.close();
+        }
+    }
+}
+```
+
+### 序列化和反序列化
+
+对象处理流ObjectInputStream，为了实现对象处理流，对象需要进行序列化。
+
+1. 序列化就是在保存数据时，保存数据的值和数据类型
+
+2. 反序列化就是在恢复数据时，恢复数据的值和数据类型
+
+3. 需要让某个对象支持序列化机制，则必须让其类是可序列化的，为了让某个类是可序列化的，该类必须实现如下两个接口之一：
+
+   Serializable  //这是一个标记接口，没有方法，推荐这个
+   Externalizable  //该接口有方法需要实现，不推荐
+
+序列化和反序列化的细节：
+
+1. 读写的顺序要一致
+2. 要求实现序列化或反序列化的对象，需要实现Serializable
+3. 序列化的类中建议添加SerialVersionUID，为了提高版本的兼容性
+4. 序列化对象时，默认将里面所有属性都进行序列化，但除了static或transient修饰的成员
+5. 序列化对象时，要求里面属性的类型也需要实现序列化接口
+6. 序列化具备可继承性，也就是如果某类已经实现了序列化，则它的所有子类也已经默认实现了序列化
+
+### 标准输入输出流
+
+System.in  标准输入     类型：InputStream    默认设备：键盘
+
+System.out  标准输出   类型：PrintStream    默认设备：显示器
+
+### 转换流
+
+InputStreamReader 和OutputStreamWriter 把字节流转换成字符流
+
+InputStreamReader(InputStream,Charset)可以传入一个InputStream对象，而且可以指定处理的编码，所以转换流经常用于处理乱码问题。
+
+OutputStreamWriter (OutputStream,Charset) 同理也可以将OutputStream输出字节流包装成Writer（输出字符流），并可以指定编码。
+
+```java
+public static void main(String[] args){
+    String file = "e:\\a.txt";
+    // 把FileInputStream 转成 InputStreamReader 并指定gbk
+    InputStreamReader isr=new InputStreamReader(new FileInputStream(file));
+    // 把InputStreamReader传入BufferedReader 提高效率
+    BuffererReader br = new BuffererReader(isr);
+    // 读取数据
+    String s = br.readLine();
+    System.out.println(s);
+    br.close();
+}
+```
+
+### 打印流
+
+打印流 printStream（字节打印流）和PrintWriter（字符打印流）
+
+打印流只有输出流没有输入流
+
+```java
+//更改打印输出流输出的位置（设备）
+PrintStream sys = new PrintStream("e:\\f1.txt");
+// PrintStream 的默认是System.out 即输出到显示器
+//System 更改打印位置可以使用System.setOut(sys)
+sys.print("你好，北京"); //也可以使用write()方法。
+sys.close();
+```
+
+### Properties类
+
+properties类常用于配置文件的保存和读取。
+
+要求配置文件的格式：
+
+键=值  这种格式
+
+注意：键值对不需要有空格，值不需要用引号括起来，默认类似是String
+
+Properties的常用方法
+
+- load：加载配置文件的键值对到Properties对象
+- list：将数据显示到指定设备（流对象）
+- getProperty(key)：根据键获取值
+- setProperty(key,val)：设置键值对到Properties对象
+- store：将Properties中的键值对存储到配置文件，在idea中，保存信息到配置文件，如果含有中文，会存储为unicode码。
+
+```java
+//使用Properties类来读取配置文件
+public static void main(String[] args) {
+   // 创建Properties对象
+    Properties pr = new Properties();
+    // 加载指定的配置文件
+    pr.load(new FileReader("src\\mysql.properties"));
+    // 把k-v显示到控制台
+    pr.list(System.out);
+    // 根据key获取对应的值
+    String ip = pr.getProperty("ip");
+    //设置更改k-v
+    pr.setProperty("charset","utf8");
+    //将k-v保存到文件中
+    pr.store(new FileWriter('src\\mysql2.properties'),null);//此处的null 是注释内容
+}
+```
+
+641
