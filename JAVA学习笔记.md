@@ -3925,7 +3925,7 @@ public static void main(String[] args){
 
 ### 序列化和反序列化
 
-对象处理流ObjectInputStream，为了实现对象处理流，对象需要进行序列化。
+对象处理流**ObjectInputStream/ObjectOutputStream**，为了实现对象处理流，对象需要进行序列化。
 
 1. 序列化就是在保存数据时，保存数据的值和数据类型
 
@@ -4024,4 +4024,4 @@ public static void main(String[] args) {
 }
 ```
 
-641
+651
