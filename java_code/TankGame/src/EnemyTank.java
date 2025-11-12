@@ -17,6 +17,15 @@ public class EnemyTank extends Tank implements Runnable{
         new Thread(this).start();
     }
 
+    public EnemyTank(int x,int y,int direction) {
+        super(x,y);
+        setType(1);
+        setDirection(direction);
+        setSpeed(5);
+        // 开启敌人坦克自动移动线程
+        new Thread(this).start();
+    }
+
     public void setEnemyTanks(Vector<EnemyTank> peng) {
         this.EnemyTanks = peng;
     }
@@ -30,7 +39,7 @@ public class EnemyTank extends Tank implements Runnable{
                 switch (this.getDirection()){
                     case 0:// 上
                         // 当前坦克左上角和右上角的坐标[this.getX(),this.getY()]和[this.getX()+40,this.getY()]
-                        if(t.getDirection()==0||t.getDirection()==1||t.getDirection()==2){
+                        if(t.getDirection()==0||t.getDirection()==2){
                             // 其他坦克方向是上下 则坦克坐标点[t.getX(),t.getY():t.getX()+40,t.getY()+60]
                             //检测左上角
                             if(this.getX()>=t.getX()&&this.getX()<=t.getX()+40
@@ -63,7 +72,7 @@ public class EnemyTank extends Tank implements Runnable{
                         break;
                     case 1://右
                         // 当前坦克右上角和右下角的坐标[this.getX()+60,this.getY()]和[this.getX()+60,this.getY()+40]
-                        if(t.getDirection()==0||t.getDirection()==1||t.getDirection()==2){
+                        if(t.getDirection()==0||t.getDirection()==2){
                             // 其他坦克方向是上下 则坦克坐标点[t.getX(),t.getY():t.getX()+40,t.getY()+60]
                             //检测右上角是的在其他坦克范围内
                             if(this.getX()+60>=t.getX()&&this.getX()+60<=t.getX()+40
@@ -129,7 +138,7 @@ public class EnemyTank extends Tank implements Runnable{
                         break;
                     case 3://左
                         // 当前坦克左上角和左下角的坐标[this.getX(),this.getY()]和[this.getX(),this.getY()+60]
-                        if(t.getDirection()==0||t.getDirection()==1||t.getDirection()==2){
+                        if(t.getDirection()==0||t.getDirection()==2){
                             // 其他坦克方向是上下 则坦克坐标点[t.getX(),t.getY():t.getX()+40,t.getY()+60]
                             //检测左上角
                             if(this.getX()>=t.getX()&&this.getX()<=t.getX()+40

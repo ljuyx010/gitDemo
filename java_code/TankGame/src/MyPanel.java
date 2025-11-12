@@ -7,7 +7,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.Vector;
 
 //坦克大战的绘图区域
@@ -15,6 +18,7 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
     private boolean isRunning = true;
     //定义玩家坦克
     Hero myHero=null;
+    private static int key; // 1.新游戏 2.继续上局
     //定义敌人坦克放入到vector
     Vector<EnemyTank> enemyTanks = new Vector<>();
     //定义敌人坦克的数量
@@ -25,12 +29,24 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
     Vector<Bomb> bombs = new Vector<>();
     //构造方法
     public MyPanel(){
+        System.out.println("请输入游戏选择：1.新游戏 2.继续上局");
+        Scanner sc = new Scanner(System.in);
+        key = sc.nextInt();
         //初始化玩家坦克
         myHero=new Hero(100,600);
         myHero.setSpeed(5);
         //初始化敌人坦克
-        for (int i = 0; i < enemyTankSize; i++) {
-            enemyTanks.add(new EnemyTank(200+i*100,10));
+        System.out.println("key:"+key);
+        if(key==2 && Record.readRecord()) {
+            // 继续游戏，读取记录
+            enemyTanks = Record.getEnemyTanks();
+        }else{
+            // 新游戏，初始化敌人坦克
+            for (int i = 0; i < enemyTankSize; i++) {
+                enemyTanks.add(new EnemyTank(200+i*100,10));
+            }
+            // 设置保存敌人坦克数量和坦克坐标、方向
+            Record.setEnemyTanks(enemyTanks);
         }
         // 初始化爆炸效果图片资源
         //加载爆炸效果图片
@@ -47,6 +63,12 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        // 播放背景音乐
+        Path path = Paths.get("out\\production\\TankGame\\bg.wav");//文件相对根目录的路径,根目录为java_code
+        String musicPath = path.toAbsolutePath().toString(); //获取绝对路径
+//        System.out.println("musicPath:"+musicPath);
+        new AePlayWave(musicPath).start();
     }
     //myPanel对象就是一个画板
     //Graphics g  Graphics类  画笔 提供了很多绘图的方法
@@ -61,6 +83,7 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
 
         //画出玩家坦克
         drawTank(myHero,g);
+
 //        循环绘制敌人坦克
         for (EnemyTank enemyTank : enemyTanks) {
             drawTank(enemyTank,g);
@@ -77,6 +100,10 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
         }
         //画出爆炸效果
         drawBomb(g);
+    }
+
+    public void setEnemyTanks(Vector<EnemyTank> enemyTanks) {
+        this.enemyTanks = enemyTanks;
     }
 
     //画出游戏战绩信息
@@ -186,25 +213,50 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
             int enemyY = enemyTank.getY();
             // 检测玩家坦克和敌人坦克是否碰撞
             if (!tank1.equals(enemyTank) && enemyTank.isLive() && tank1.isLive()) {
-                if ((tank1.getDirection() == 0 || tank1.getDirection() == 2) && (enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2)) {
-                    // 玩家坦克和敌人坦克都是上下移动，检测是否碰撞
-                    if (enemyTank.getX() > tank1.getX() - 40 && enemyTank.getX() < tank1.getX() + 40 && enemyTank.getY() > tank1.getY() - 60 && enemyTank.getY() < tank1.getY() + 60) {
-                        return true;
+                // 本坦克向上下移动，检测是否碰撞
+                if (tank1.getDirection() == 0 || tank1.getDirection() == 2) {
+                    // 敌人坦克向上下移动，检测是否碰撞
+                    if(enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2){
+                        //判断敌人坦克的四个角是否在本坦克范围内
+                        if((tank1.getX() <= enemyX && tank1.getX()+40 >= enemyX && tank1.getY()<= enemyY && tank1.getY()+60 >= enemyY)
+                         || (tank1.getX() <= enemyX+40 && tank1.getX()+40 >= enemyX+40 && tank1.getY()<= enemyY && tank1.getY()+60 >= enemyY)
+                         || (tank1.getX() <= enemyX && tank1.getX()+40 >= enemyX && tank1.getY()<= enemyY+60 && tank1.getY()+60 >= enemyY+60)
+                         || (tank1.getX() <= enemyX+40 && tank1.getX()+40 >= enemyX+40 && tank1.getY()<= enemyY+60 && tank1.getY()+60 >= enemyY+60)
+                        ){
+                            return true;
+                        }
+                    }else{
+                        // 敌人坦克向左右移动，检测是否碰撞
+                        if((tank1.getX() <= enemyX && tank1.getX()+40 >= enemyX && tank1.getY()<= enemyY && tank1.getY()+60 >= enemyY)
+                                || (tank1.getX() <= enemyX+60 && tank1.getX()+40 >= enemyX+60 && tank1.getY()<= enemyY && tank1.getY()+60 >= enemyY)
+                                || (tank1.getX() <= enemyX && tank1.getX()+40 >= enemyX && tank1.getY()<= enemyY+40 && tank1.getY()+60 >= enemyY+40)
+                                || (tank1.getX() <= enemyX+60 && tank1.getX()+40 >= enemyX+60 && tank1.getY()<= enemyY+40 && tank1.getY()+60 >= enemyY+40)
+                        ){
+                            return true;
+                        }
                     }
-                } else if ((tank1.getDirection() == 1 || tank1.getDirection() == 3) && (enemyTank.getDirection() == 1 || enemyTank.getDirection() == 3)) {
-                    // 玩家坦克和敌人坦克都是左右移动，检测是否碰撞
-                    if (enemyTank.getX() > tank1.getX() - 60 && enemyTank.getX() < tank1.getX() + 60 && enemyTank.getY() > tank1.getY() -40  && enemyTank.getY() < tank1.getY() + 40) {
-                        return true;
-                    }
-                } else if ((tank1.getDirection() == 1 || tank1.getDirection() == 3) && (enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2)) {
-                    // 玩家坦克左右和敌人坦克上下移动，检测是否碰撞
-                    if (enemyTank.getX() > tank1.getX() -60 && enemyTank.getX() < tank1.getX() + 100 && enemyTank.getY() > tank1.getY()- 40 && enemyTank.getY() < tank1.getY() + 100) {
-                        return true;
-                    }
+
+                // 本坦克向左右移动，检测是否碰撞
                 } else {
-                    // 玩家坦克上下和敌人坦克左右移动，检测是否碰撞
-                    if (enemyTank.getX() > tank1.getX() - 40 && enemyTank.getX() < tank1.getX() + 100 && enemyTank.getY() > tank1.getY() - 60 && enemyTank.getY() < tank1.getY() + 100) {
-                        return true;
+                    // 敌人坦克向上下移动，检测是否碰撞
+                    if(enemyTank.getDirection() == 0 || enemyTank.getDirection() == 2){
+                        //判断敌人坦克的四个角是否在本坦克范围内
+                        if((tank1.getX() <= enemyX && tank1.getX()+60 >= enemyX && tank1.getY()<= enemyY && tank1.getY()+40 >= enemyY)
+                                || (tank1.getX() <= enemyX+40 && tank1.getX()+60 >= enemyX+40 && tank1.getY()<= enemyY && tank1.getY()+40 >= enemyY)
+                                || (tank1.getX() <= enemyX && tank1.getX()+60 >= enemyX && tank1.getY()<= enemyY+60 && tank1.getY()+40 >= enemyY+60)
+                                || (tank1.getX() <= enemyX+40 && tank1.getX()+60 >= enemyX+40 && tank1.getY()<= enemyY+60 && tank1.getY()+40 >= enemyY+60)
+                        ){
+                            return true;
+                        }
+                    }else{
+                        // 敌人坦克向左右移动，检测是否碰撞
+                        if((tank1.getX() <= enemyX && tank1.getX()+60 >= enemyX && tank1.getY()<= enemyY && tank1.getY()+40 >= enemyY)
+                                || (tank1.getX() <= enemyX+60 && tank1.getX()+60 >= enemyX+60 && tank1.getY()<= enemyY && tank1.getY()+40 >= enemyY)
+                                || (tank1.getX() <= enemyX && tank1.getX()+60 >= enemyX && tank1.getY()<= enemyY+40 && tank1.getY()+40 >= enemyY+40)
+                                || (tank1.getX() <= enemyX+60 && tank1.getX()+60 >= enemyX+60 && tank1.getY()<= enemyY+40 && tank1.getY()+40 >= enemyY+40)
+                        ){
+                            return true;
+                        }
                     }
                 }
             }
@@ -311,9 +363,9 @@ public class MyPanel extends JPanel implements KeyListener,Runnable {
                 Iterator<Shot> shotIterator = enemyTank.shots.iterator();
                 while (shotIterator.hasNext()) {
                     Shot shot = shotIterator.next();
-                    int shXto = shot.getX();
-                    int shYto = shot.getY();
-                    boolean shotIslive = shot.islive();
+                    int shXto = shot.getX(); // 敌人坦克的子弹的目标x坐标
+                    int shYto = shot.getY(); // 敌人坦克的子弹的目标y坐标
+                    boolean shotIslive = shot.islive(); // 敌人坦克的子弹是否存活
 
                     if ((myHero.getDirection() == 0 || myHero.getDirection() == 2) && shXto >= myHero.getX() && shXto <= myHero.getX() + 40 && shYto >= myHero.getY() && shYto <= myHero.getY() + 60 && shotIslive) {
                         // 敌人坦克的子弹击中玩家坦克
