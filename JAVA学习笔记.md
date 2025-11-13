@@ -4024,4 +4024,201 @@ public static void main(String[] args) {
 }
 ```
 
-655
+## 网络相关
+
+网络通信
+
+概念：两台设备之间通过网络实现数据传输
+
+网络通信：将数据通过网络从一台设备传输到另一台设备
+
+java.net包下提供了一系列的类或接口，供程序员使用，完成网络通信
+
+### IP地址
+
+概念：用于唯一标识网络中的每台计算机
+
+查看ip地址：ipConfig
+
+ip地址的标识形式：点分十进制 XXX.XXX.XXX.XXX
+
+每一个十进制数的范围：0~255
+
+ip地址的组成 = 网络地址+装机地址
+
+ilpv6 是互联网工程任务组设计的用于替代ipv4的下一代ip协议，其地址数量号称可以为全世界的每一粒沙子编上一个地址
+
+由于ipv4最大的问题在于网络地址资源有限，严重制约了互联网的应用和发展，ipv6的使用，不仅能解决网络地址资源数量的问题，而且也解决了多种设备连入互联网的障碍。
+
+域名：解决记忆ip困难的问题。
+
+端口号：用于标识计算机上某个特定的网络程序，用2个字节表示端口即2^16,所以端口的范围是0~65535。0 ~1024已经被知名的程序占用，比如ssh22，ftp：21，smtp：25，http 80
+
+常见的网络程序端口号：tomcat8080 ，mysql3306 ，oracle1521， sqlserver 1433
+
+### 网络通信协议
+
+ICP/IP 协议，中文译名传输控制协议/因特网互联协议，又叫做网络通讯协议。这个协议是Internet最基本的协议，Internet国际互联网络的基础，简单的说，就是由网络层的ip协议和传输层的Tcp协议组成的。
+
+Tcp协议：传输控制协议
+
+1. 使用tcp协议前，须建立Tcp连接，形成传输数据通道
+2. 传输前，采用“三次握手”方式，是可靠 
+3. Tcp协议进行通信的两个应用进程：客户端，服务端
+4. 在连接中可进行大数据量的传输
+5. 传输完毕，需释放已建立的连接，效率低
+
+UDP协议：用户数据协议
+
+1. 将数据，原，目的封装成数据包，不需要建立连接
+2. 每个数据报的大小限制在64k内，不适合传输大量数据
+3. 因无需连接，故是不可靠的
+4. 发送数据结束时无需释放资源，速度快
+5. 例如：发短信
+
+### InetAdress类
+
+相关方法：
+
+1. 获取本机InetAddress对象 getLocalHost
+2. 根据指定主机名/域名获取ip地址对象 getByName
+3. 获取InetAddress 对象的主机名 getHostName
+4. 获取InetAddress对象的地址  getHostAddress
+
+### Socket
+
+1. 套接字（Socket）开发网络应用程序被广泛采用，以至于成为事实上的标准
+2. 通信的两端都要有Socket，是两台机器间通信的端点
+3. 网络通信起始就是Socket间的通信
+4. Socket允许程序把网络连接当成一个流，数据在两个Socket间通过IO传输
+5. 一般主动发起通信的应用程序属客户端，等待通信请求的为服务端。
+
+```java
+// Server端
+public static void main(String[] args) throws IOException {
+        System.out.println("服务器启动，监听9999端口");
+        // 实例化一个ServerSocket对象，监听9999端口
+        ServerSocket serverSocket = new ServerSocket(9999);
+        // 调用accept()方法，等待客户端连接
+        // 这个serverSocket可以通过accept()返回多个Socket连接【多个客户端同时连接服务器】
+        Socket socket = serverSocket.accept();
+        System.out.println("客户端连接"+socket.getClass());
+        // 建立输入流，读取客户端发送的消息
+        InputStream inputStream = socket.getInputStream();
+        // 读取客户端发送的消息
+        byte[] bytes = new byte[1024];
+        int readLen = 0;
+        while ((readLen = inputStream.read(bytes)) != -1) {
+            //根据读取到是实际长度，截取有效数据
+            System.out.println(new String(bytes, 0, readLen));
+        }
+    	// 获取Socket相关联的输出流
+        OutputStream outputStream = socket.getOutputStream();
+        // 发送消息给客户端
+        outputStream.write("hello client".getBytes());
+        // 发送完信息，必须设置结束标记，否则客户端会一直阻塞等待
+        socket.shutdownOutput();
+        // 关闭输入流
+        inputStream.close();
+        // 关闭socket
+        socket.close();
+    }
+```
+
+```java
+// Client 端
+public static void main(String[] args) throws  IOException {
+        System.out.println("客户端启动");
+        // 实例化一个Socket对象，连接服务器的9999端口
+        Socket socket = new Socket("localhost", 9999);
+        System.out.println("连接服务器成功"+socket.getClass());
+        //发送hello 给服务器
+        OutputStream outputStream = socket.getOutputStream();
+    	// 使用转换流将字节流转成字符流发送消息给服务器
+        BufferedWriter osw = new BufferedWriter(new OutputStreamWriter(outputStream));
+        //outputStream.write("hello".getBytes()); //使用字节流
+    	osw.write("你好，服务器"); // 使用字符流
+    	osw.newLine();// 发送换行符，结束消息,但对方必须使用readLine()方式接收才能生效
+        osw.flush(); // 使用字符流，需要手动刷新缓存，否则消息不会发送到服务器
+    	//设置输出流结束标记，否则服务端会一直等待
+        //socket.shutdownOutput();
+    	
+        // 获取Socket的输入流
+        InputStream inputStream = socket.getInputStream();
+    	
+        // 读取服务端发送的消息
+        byte[] bytes = new byte[1024];
+        int readLen = 0;
+        while ((readLen = inputStream.read(bytes)) != -1) {
+            //根据读取到是实际长度，截取有效数据
+            System.out.println(new String(bytes, 0, readLen));
+        }
+    	osw.close(); //关闭最外层的流即可，内层的会自动关闭
+        //关闭输入流
+        //inputStream.close();
+        //关闭流
+        outputStream.close();
+        //关闭socket
+        socket.close();
+    }
+```
+
+netstat指令
+
+1. netstat -an 可以查看当前主机网络情况，包括端口监听情况和网络连接情况
+2. netstat -an | more  可以分页显示 空格下一页
+3. netstat -anb 可以查看是那个程序在监听端口
+4. 要求在dos控制台下执行
+
+当客户端连接到服务端后，实际上客户端也是通过一个端口和服务端进行通讯的，这个端口是TCP/IP来分配的，是不确定的，是随机的。
+
+### UDP编程
+
+1. 类DatatramSocket和DatagramPacket实现了基于UDP协议网络程序。
+2. UDP数据报通过数据报套接字DatagramSocket发送和接收，系统不保证UDP数据一定能够安全送到目的地，也不能确定什么时候可以抵达。
+3. DatagramPacket对象封装了UDP数据报，在数据报中包含了发送端的IP地址和端口号一级接收端的ip地址和端口号
+4. UDP协议中每个数据报都给出了完整的地址信息，因此无须建立发送方和接收方的连接。
+
+UDP说明：
+
+1. 没有明确的服务端和客户端，演变成数据的发送端和接收端
+2. 接收数据和发送数据是通过DatagramSocket对象完成。
+3. 将数据封装到DatagramPacket对象中，发送
+4. 当接收到DatagramPacket对象，需要进行拆包，取出数据
+5. DatagramSocket可以指定在哪个端口接收数据
+
+基本流程：
+
+1. 建立发送端，接收端
+2. 发送数据前，建立数据包 DatagramPacket对象
+3. 调用DatagramSocket的发送，接收方法
+4. 关闭DatagramSocket
+
+```java
+//Udp 接收和发送
+public static void main(String[] args) throws IOException {
+      //创建一个DatagramSocket对象，准备在8888接收数据
+      DatagramSocket socket = new DatagramSocket(8888);
+      //构建一个DatagramPacket对象，准备接收数据
+      byte[] bytes = new byte[64*1024]; //udp数据报最大64k
+      DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+      //调用socket的receive方法，将数据接收在packet中，当本机的8888端口有数据时，就会自动接收，
+        // 如果没有数据，就会阻塞等待
+      socket.receive(packet);
+      //从packet中拆包提取数据
+      int len = packet.getLength(); //实际接收到的数据长度
+      byte[] data = packet.getData();
+      System.out.println(new String(data, 0, len));
+      // 接收结束
+      // 回复发送端
+      byte[] sendData = "好的 明天见".getBytes();
+      //构建一个DatagramPacket对象，准备发送数据 给发送方
+      DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.getAddress(), packet.getPort());
+      //调用socket的send方法，将数据发送到packet中
+      socket.send(sendPacket);
+      //关闭socket
+      socket.close();
+    }
+```
+
+679
