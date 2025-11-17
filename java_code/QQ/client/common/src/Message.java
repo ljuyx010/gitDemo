@@ -6,12 +6,16 @@ import java.io.Serializable;
  * @time 2025/11/14 17:20
  */
 public class Message implements Serializable {
-    public final String SUCCESS = "1"; // 用户登录成功
-    public final String FAILURE = "2"; // 用户登录失败
-    private String sender;
-    private String getter;
-    private String message;
-    private String sendtime;
+    private static final long serialVersionUID = 1L; // 为了类在tcp中传输的兼容性
+    private String sender; // 发送这
+    private String getter; //接受者
+    private String message; // 消息内容
+    private String sendtime; // 发送时间
+    private String mesType;  // 消息类型
+    public String getSender() {
+        return sender;
+    }
+    public void setSender(String sender) {}
 
     public Message(String sender, String getter, String message, String sendtime) {
         this.sender = sender;
@@ -25,5 +29,29 @@ public class Message implements Serializable {
     }
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getGetter() {
+        return getter;
+    }
+
+    public void setGetter(String getter) {
+        this.getter = getter;
+    }
+
+    public String getSendtime() {
+        return sendtime;
+    }
+
+    public void setSendtime(String sendtime) {
+        this.sendtime = sendtime;
+    }
+
+    public String getMesType() {
+        return mesType;
+    }
+
+    public void setMesType(String mesType) {
+        this.mesType = mesType;
     }
 }
