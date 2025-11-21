@@ -12,16 +12,22 @@ public class Message implements Serializable {
     private String message; // 消息内容
     private String sendtime; // 发送时间
     private String mesType;  // 消息类型
-    public String getSender() {
-        return sender;
+
+    public Message() {
     }
-    public void setSender(String sender) {}
 
     public Message(String sender, String getter, String message, String sendtime) {
         this.sender = sender;
         this.getter = getter;
         this.message = message;
         this.sendtime = sendtime;
+    }
+
+    public String getSender() {
+        return sender;
+    }
+    public void setSender(String sender) {
+        this.sender = sender;
     }
 
     public String getMessage() {

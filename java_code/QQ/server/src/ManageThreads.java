@@ -12,7 +12,15 @@ public class ManageThreads {
         map.put(username,serverThreads);
     }
 
+    public static HashMap<String, ServerThreads> getMap() {
+        return map;
+    }
+
     public static ServerThreads getMapSocket(String username) {
         return map.get(username);
+    }
+
+    public static void removeThread(String username){
+        map.remove(username);
     }
 }

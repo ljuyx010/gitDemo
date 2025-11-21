@@ -93,9 +93,10 @@ public class Client {
             System.out.println("9.退出系统");
             System.out.print("请输入你的选择：");
             char c1 = Utility.readMenuSelection();
+            ClientMessage clientMessage = new ClientMessage(Client.username);
             switch (c1) {
                 case '1':
-                    System.out.println("在线用户列表");
+                    clientMessage.getOnlineFriend();
                     break;
                 case '2':
                     System.out.println("发送消息给用户");
@@ -109,6 +110,8 @@ public class Client {
                 case '9':
                     Client.loop = false;
                     Client.sonloop = false;
+                    clientMessage.exit();
+                    System.exit(0); // 退出jvm虚拟机，则所有关联的线程都将退出
                     break;
                 default:
                     System.out.println("输入错误");
