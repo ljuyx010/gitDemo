@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Date;
 
 /**
  * @author 混江龙
@@ -82,8 +83,22 @@ public class Client {
         }
         return false;
     }
+    //私聊
+    public static void sendToOne() throws IOException {
+        System.out.print("请输入要私聊的用户名：");
+        String getter = Utility.readString(10,true);
+        System.out.print("请输入要发送的消息：");
+        String message = Utility.readString(100,true);
+        new ClientMessage(Client.username).sendMessage(MessageType.MESSAGE_TO_ONE,message,getter);
+    }
+    //群聊
+    public static void sendToAll() throws IOException {
+        System.out.print("请输入要发送的消息：");
+        String message = Utility.readString(100,true);
+        new ClientMessage(Client.username).sendMessage(MessageType.MESSAGE_TO_ALL,message,"");
+    }
 
-    public static void sonMenu(){
+    public static void sonMenu() throws IOException {
         while (Client.sonloop){
             System.out.println("\n =====================网络通信系统二级菜单（用户"+ Client.username +"）=====================");
             System.out.println("1.在线用户列表");
@@ -99,14 +114,14 @@ public class Client {
                     clientMessage.getOnlineFriend();
                     break;
                 case '2':
-                    System.out.println("发送消息给用户");
-                    Client.sonloop = false;
+                    Client.sendToOne();
                     break;
                 case '3':
-                    System.out.println("发送消息到群聊");
-                    Client.sonloop = false;
+                    Client.sendToAll();
+                    break;
                 case '4':
                     System.out.println("发送文件");
+                    break;
                 case '9':
                     Client.loop = false;
                     Client.sonloop = false;
