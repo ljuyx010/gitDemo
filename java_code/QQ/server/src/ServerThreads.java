@@ -16,10 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ServerThreads extends Thread{
     private Socket socket;
     private String username;
-    private static ConcurrentHashMap<String, List<Message>> lineoutMessage = new ConcurrentHashMap<>();
-    public ServerThreads(String username,Socket socket){
+    private ConcurrentHashMap<String, List<Message>> lineoutMessage;
+
+    public ServerThreads(String username,Socket socket) throws IOException, ClassNotFoundException {
         this.username=username;
         this.socket = socket;
+        this.lineoutMessage = Server.getLineoutMessage();
     }
 
     public Socket getSocket() {
@@ -50,15 +52,7 @@ public class ServerThreads extends Thread{
 //                }
 //                System.out.println("=========================");
                 // 首次登录判断是否有离线消息
-                if(this.lineoutMessage.containsKey(username)){
-                    ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                    List<Message> messages = this.lineoutMessage.get(username);
-                    for (Message message : messages) {
-                        oos.writeObject(message);
-                    }
-                    // 转发完，删除离线消息
-                    this.lineoutMessage.remove(username);
-                }else if(mes.getMesType().equals(MessageType.MESSAGE_ONLINE_FRIEND)){
+                if(mes.getMesType().equals(MessageType.MESSAGE_ONLINE_FRIEND)){
                     // 处理从客户端发送来的获取在线好友列表信息
                     for(String key:map.keySet()){
                         if(!key.equals(sender)){

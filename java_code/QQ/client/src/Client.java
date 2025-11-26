@@ -72,8 +72,8 @@ public class Client {
             }else{
                 System.out.println("----登录失败----");
             }
-            ois.close();
             oos.close();
+            ois.close();
             try {
                 socket.close();
             } catch (IOException e) {
