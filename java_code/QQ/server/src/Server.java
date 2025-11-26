@@ -43,6 +43,7 @@ public class Server {
 
     public Server() throws IOException, ClassNotFoundException {
         serverSocket = new ServerSocket(port);
+        new Thread(new SendNews()).start(); // 创建线程并启动
         while (running) {
             // 当服务端和客户端建立连接后，会继续循环监听
             Socket socket = serverSocket.accept(); // 如果没有客户端连接则会阻塞在这里
@@ -54,7 +55,7 @@ public class Server {
             // 构建一个message对象准备回复客户端
             Message message = new Message();
             if(checkUser(user.getUserId(),user.getPassword())){
-                System.out.println("登录成功");
+                System.out.println("\n"+user.getUserId()+"登录成功");
                 // 登录成功后，设置message的状态为SUCCESS
                 message.setMesType(MessageType.MESSAGE_LOGIN_SUCCEES);
                 oos.writeObject(message);
@@ -67,7 +68,7 @@ public class Server {
                 ManageThreads.addThread(user.getUserId(),serverThreads);
 
             }else{
-                System.out.println("登录失败");
+                System.out.println("\n"+user.getUserId()+"登录失败");
                 // 登录失败后，设置message的状态为FAILURE
                 message.setMesType(MessageType.MESSAGE_LOGIN_FAIL);
                 oos.writeObject(message);

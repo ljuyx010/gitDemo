@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -98,6 +99,23 @@ public class Client {
         new ClientMessage(Client.username).sendMessage(MessageType.MESSAGE_TO_ALL,message,"");
     }
 
+    // 发送文件
+    public static void sendFile() throws IOException {
+        System.out.print("请输入要发送文件的用户名：");
+        String getter = Utility.readString(10,true);
+        System.out.print("请输入要发送的文件路径（如D:\\Download\\1.jpg）：");
+        String src = Utility.readString(100,true);;
+        // 判断文件路径是否正确
+        File file = new File(src);
+        while(!file.exists()){
+            System.out.print("文件不存在，请重新输入要发送的文件路径（如D:\\Download\\1.jpg）：");
+            src = Utility.readString(100,true);
+        }
+        System.out.print("请输入文件保存路径：");
+        String dst = Utility.readString(100,true);
+        new ClientMessage(Client.username).sendMessage(MessageType.MESSAGE_FILE,getter,src,dst);
+    }
+
     public static void sonMenu() throws IOException {
         while (Client.sonloop){
             System.out.println("\n =====================网络通信系统二级菜单（用户"+ Client.username +"）=====================");
@@ -120,7 +138,7 @@ public class Client {
                     Client.sendToAll();
                     break;
                 case '4':
-                    System.out.println("发送文件");
+                    Client.sendFile();
                     break;
                 case '9':
                     Client.loop = false;

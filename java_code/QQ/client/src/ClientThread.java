@@ -1,3 +1,4 @@
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
@@ -46,6 +47,15 @@ public class ClientThread extends Thread {
                     System.out.println("\n"+sendtime+" "+sender+"对"+getter+"说:"+content);
                 }else if(message.getMesType().equals(MessageType.MESSAGE_TO_ALL)){
                     System.out.println("\n"+sendtime+" "+sender+"对大家说:"+content);
+                }else if(message.getMesType().equals(MessageType.MESSAGE_FILE)){
+                    // 接收文件
+                    String src = message.getSrc();
+                    String dest = message.getDest();
+                    byte[] fileDate = message.getFileDate();
+                    System.out.println("\n"+sendtime+" "+sender+"给"+getter+"发送了文件:"+src+"文件保存在"+dest);
+                    FileOutputStream fos = new FileOutputStream(dest);
+                    fos.write(fileDate);
+                    fos.close();
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

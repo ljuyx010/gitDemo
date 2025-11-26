@@ -11,4 +11,5 @@ public interface MessageType {
     String MESSAGE_EXIT = "5"; //退出
     String MESSAGE_TO_ONE  = "6"; //私聊
     String MESSAGE_TO_ALL = "7"; //群发
+    String MESSAGE_FILE = "8"; //发送文件
 }

@@ -2,7 +2,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author 混江龙
@@ -12,6 +16,7 @@ import java.util.HashMap;
 public class ServerThreads extends Thread{
     private Socket socket;
     private String username;
+    private static ConcurrentHashMap<String, List<Message>> lineoutMessage = new ConcurrentHashMap<>();
     public ServerThreads(String username,Socket socket){
         this.username=username;
         this.socket = socket;
@@ -34,8 +39,27 @@ public class ServerThreads extends Thread{
                 String hfcontent = ""; // 回复内容
                 //  System.out.println(sender+"对"+getter+"说："+content);
                 HashMap<String, ServerThreads> map = ManageThreads.getMap();
-                // 处理从客户端发送来的在线好友消息
-                if(mes.getMesType().equals(MessageType.MESSAGE_ONLINE_FRIEND)){
+//                Iterator<String> iterator = this.lineoutMessage.keySet().iterator();
+//                while(iterator.hasNext()){
+//                    String key = iterator.next();
+//                    List<Message> list = lineoutMessage.get(key);
+//                    System.out.println("key:"+key);
+//                    for(Message m : list){
+//                        System.out.println(m.getSender()+" "+m.getMessage());
+//                    }
+//                }
+//                System.out.println("=========================");
+                // 首次登录判断是否有离线消息
+                if(this.lineoutMessage.containsKey(username)){
+                    ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                    List<Message> messages = this.lineoutMessage.get(username);
+                    for (Message message : messages) {
+                        oos.writeObject(message);
+                    }
+                    // 转发完，删除离线消息
+                    this.lineoutMessage.remove(username);
+                }else if(mes.getMesType().equals(MessageType.MESSAGE_ONLINE_FRIEND)){
+                    // 处理从客户端发送来的获取在线好友列表信息
                     for(String key:map.keySet()){
                         if(!key.equals(sender)){
                             hfcontent += key+" ";
@@ -49,9 +73,23 @@ public class ServerThreads extends Thread{
                     oos.writeObject(message);
                 }else if(mes.getMesType().equals(MessageType.MESSAGE_TO_ONE)){
                     // 处理私聊类型的消息
-                    Socket socket = map.get(getter).getSocket(); // 获取接收人关联的socket
-                    ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-                    oos.writeObject(mes); // 服务器把消息转发给getter
+                    if(!map.containsKey(getter)){
+                        System.out.println(getter+"用户不在线，消息保存到离线集合中");
+                        // getter 不在线就存到离线集合中
+                        if(this.lineoutMessage.containsKey(getter)){
+                            // getter 已经在离线集合中
+                            this.lineoutMessage.get(getter).add(mes);
+                        }else {
+                            List<Message> messages = new ArrayList<>();
+                            messages.add(mes);
+                            this.lineoutMessage.put(getter, messages);
+                        }
+                    }else {
+                        // getter 在线就直接转发
+                        Socket socket = map.get(getter).getSocket(); // 获取接收人关联的socket
+                        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                        oos.writeObject(mes); // 服务器把消息转发给getter
+                    }
                 }else if(mes.getMesType().equals(MessageType.MESSAGE_TO_ALL)){
                     // 处理群聊类型的消息
                     for(String key:map.keySet()){
@@ -60,6 +98,23 @@ public class ServerThreads extends Thread{
                             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
                             oos.writeObject(mes);
                         }
+                    }
+                }else if(mes.getMesType().equals(MessageType.MESSAGE_FILE)){
+                    //转发文件
+                    if(!map.containsKey(getter)){
+                        // getter 不在线就存到离线集合中
+                        if(this.lineoutMessage.containsKey(getter)){
+                            // getter 已经在离线集合中
+                            this.lineoutMessage.get(getter).add(mes);
+                        }else {
+                            List<Message> messages = new ArrayList<>();
+                            messages.add(mes);
+                            this.lineoutMessage.put(getter, messages);
+                        }
+                    }else {
+                        Socket socket = map.get(getter).getSocket(); // 获取接收人关联的socket
+                        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                        oos.writeObject(mes); // 服务器把消息转发给getter
                     }
                 }else if(mes.getMesType().equals(MessageType.MESSAGE_EXIT)){
                     // 处理退出类型的消息

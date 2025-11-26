@@ -12,10 +12,11 @@ public class Message implements Serializable {
     private String message; // 消息内容
     private String sendtime; // 发送时间
     private String mesType;  // 消息类型
-    public String getSender() {
-        return sender;
-    }
-    public void setSender(String sender) {}
+    private String src; // 文件源
+    private String dest; //文件保存路径
+    private byte[] fileDate; //文件二进制数据
+
+
 
     public Message() {}
 
@@ -25,7 +26,12 @@ public class Message implements Serializable {
         this.message = message;
         this.sendtime = sendtime;
     }
-
+    public String getSender() {
+        return sender;
+    }
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
     public String getMessage() {
         return message;
     }
@@ -55,5 +61,40 @@ public class Message implements Serializable {
 
     public void setMesType(String mesType) {
         this.mesType = mesType;
+    }
+
+    public String getSrc() {
+        return src;
+    }
+
+    public void setSrc(String src) {
+        this.src = src;
+    }
+
+    public String getDest() {
+        return dest;
+    }
+
+    public void setDest(String dest) {
+        this.dest = dest;
+    }
+
+    public byte[] getFileDate() {
+        return fileDate;
+    }
+
+    public void setFileDate(byte[] fileDate) {
+        this.fileDate = fileDate;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "sender='" + sender + '\'' +
+                ", getter='" + getter + '\'' +
+                ", message='" + message + '\'' +
+                ", sendtime='" + sendtime + '\'' +
+                ", mesType='" + mesType + '\'' +
+                '}';
     }
 }

@@ -46,6 +46,26 @@ public class ClientMessage {
         }
     }
 
+    public void sendMessage(String type,String getter,String src,String dst) {
+        try {
+            File file = new File(src);
+            FileInputStream fis = new FileInputStream(file);
+            ObjectOutputStream oos = new ObjectOutputStream(this.out);
+            byte[] fileData = new byte[(int)file.length()];
+            // 把文件的二进制数据写入到数组
+            fis.read(fileData);
+            message.setMesType(type);
+            message.setGetter(getter);
+            message.setSrc(src);
+            message.setDest(dst);
+            message.setFileDate(fileData);
+            oos.writeObject(message);
+            fis.close();
+        }catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     // 退出系统
     public void exit() {
         try {
