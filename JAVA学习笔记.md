@@ -4261,7 +4261,7 @@ public static void main(String[] args) throws IOException {
 1. java.lang.Class：代表一个类，Class对象表示某个类加载后在堆中的对象
 2. java.lang.reflect.Method：代表类的方法，Method对象表示反射类的方法
 3. java.lang.reflect.Field：代表类的成员变量，Field对象表示反射类的成员变量，getField('age')：只能获取public属性的变量。
-4. java..lang.reflect.Constructor：代表类的构造方法
+4. java.lang.reflect.Constructor：代表类的构造方法
 
 **反射优点和缺点**
 
@@ -4274,4 +4274,69 @@ public static void main(String[] args) throws IOException {
 2. setAccessible作用是启动和禁用访问安全检查的开关
 3. 参数值为true表示 反射的对象在使用时取消访问检查，提高反射的效率。参数为false则表示反射的对象执行访问检查
 
-715
+### Class类
+
+1. Class也是类，因此也继承Object类
+2. Class类对象不是new出来的，而是系统创建的
+3. 对于某个类的Class类对象，在内存中只有一份，因为类只加载一次
+4. 每个类的实例都会记得自己是由哪个Class实例所生成
+5. 通过Class对象可以完整地得到一个类的完整结构，通过一系列API
+6. Class对象是存放在堆的
+7. 类的字节码二进制数据，是放在方法区的，有的地方称为类的元数据（包括方法代码，变量名，方法名，访问权限等等）
+
+**Class类的常用方法：**
+
+| 方法名                                            | 功能说明                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| static Class forName(String name)                 | 返回指定类名name的Class对象                                  |
+| Object newInstance()                              | 调用缺省构造函数，返回该Class对象的一个实例                  |
+| getName()                                         | 返回此Class对象所表示的实体（类，接口，数组类，基本类型等）名称 |
+| Class getSuperClass()                             | 返回当前Class对象的父类的Class对象                           |
+| Class[] getInterfaces()                           | 返回当前Class对象的接口                                      |
+| ClassLoader getClassLoader()                      | 返回该类的类加载器                                           |
+| Class getSuperclass()                             | 返回表示此Class所表示的实体的超类的Class                     |
+| Constructor[] getConstructors()                   | 返回一个包含某些Constructor对象的数组                        |
+| Field[] getDeclaredFields()                       | 返回Field对象的一个数组                                      |
+| Method getMethod(String name,Class... paramTypes) | 返回一个Method对象，此对象的形参类型为paramType              |
+
+```java
+class Ref{
+    public static void main(String[] args){
+        String path = "dpwl.cn.Car"; // 类的路径
+        Class<?> cls = Class.forName(path);
+        System.out.println(cls.getPackage().getName()); // 输出类的包名
+        Car car = (Car)cls.newInstance(); //通过反射创建对象实例
+        Field brand = cls.getField("brand"); //通过反思获取属性brand
+        String val = brand.get(car); //获取car对象的brand属性的值，这里只能获取public类型的，private类型则会报错。
+        brand.set(car,"奔驰"); // 通过反射给car对象的属性赋值
+        Field[] fields = cls.getFields(); //得到所有的属性
+        for(Field f:fields){
+            System.out.println(f.getName());
+        }
+    }
+}
+```
+
+### 获取Class类对象
+
+1. 已知一个类的全类名，且该类在类路径下，可以通过Class类的静态方法forName()获取，可能抛出ClassNotFoundException。示例：`Class cls = Class.forName("java.lang.Cat");`
+   应用场景：多用于配置文件，读取类全路径，加载类。
+
+2. 若已知具体的类，通过类的class获取，该方式最为安全可靠，程序性能最高。示例：`Class cls=Cat.class;`
+   应用场景：多用于参数传递，比如通过反射得到对应构造器对象。
+
+3. 已知某个类的实例，抵用该实例的getClass()方法获取Class对象。示例：`Class cla = 对象.getClass();`
+   应用场景：通过创建好的对象，获取Class对象
+
+4. 其他方式：通过类加载器（有4种）
+
+   `ClassLoader cl = 对象.getClass().getClassLoader();`
+   `Class cla = cl.loadClass("类的全类名");`
+
+5. 基本数据（int,char,boolean,float,double,byte,long,short）按如下方式得到Class对象
+   `Class cls = int.class`
+
+6. 基本数据类型对应的包装类，可以通过TYPE得到Class类对象
+   `Class cls = String.TYPE`
+
+718
