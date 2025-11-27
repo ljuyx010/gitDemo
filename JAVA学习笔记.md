@@ -4487,4 +4487,6 @@ java.lang.reflect.Constructor类
 5. 注意：如果是静态方法，则invoke的参数o，可以写成null。
 5. 在反射中，如果方法有返回值，统一返回的是Object，但是他运行类型和方法定义的返回类型一致。
 
-728
+## Mysql
+
+731
