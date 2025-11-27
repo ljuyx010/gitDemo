@@ -4339,4 +4339,152 @@ class Ref{
 6. 基本数据类型对应的包装类，可以通过TYPE得到Class类对象
    `Class cls = String.TYPE`
 
-718
+### 哪些类型有Class对象
+
+如下类型有Class对象
+
+1. 外部类，成员内部类，静态内部类，局部内部类，匿名内部类
+2. interface：接口
+3. 数组
+4. enum：枚举
+5. annotation：注解
+6. 基本数据类型
+7. void
+
+### 类加载
+
+反射机制是java实现动态语言的关键，也就是通过反射实现类动态加载。
+
+1. 静态加载：编译时加载相关的类，如果没有则报错，依赖性太强
+2. 动态加载：运行时加载需要的类，如果运行时不用该类，即使类不存在也不报错，降低了依赖性
+
+```java
+Dog dog = new Dog(); // 静态加载，依赖性强，若Dog类不存在，编译时就会报错
+dog.cry();
+
+Class cls = Class.forName('Person'); // 动态加载person类，Person类不存在时编译时不会报错
+Object o = cls.newInstance();  // 只有代码运行到使用该类时，才会抛出异常
+Method m = cls.getMethod("hi");
+m.invoke(o);
+```
+
+类加载时机：
+
+1. 当创建对象时（new） //静态加载
+2. 当子类被加载时 //静态加载
+3. 调用类中的静态成员时 //静态加载
+4. 通过反射  //动态加载
+
+**类加载过程**
+
+![QQ20251127-110937](.\img\QQ20251127-110937.png)
+
+![QQ20251127-111241](.\img\QQ20251127-111241.png)
+
+**加载阶段**
+
+JVM在该阶段的主要目的是将字节码从不同的数据源（可能是class文件，也可能是jar包，甚至网络）转化成**二进制字节流加载到内存中**，并生成一个代表该类的java.lang.Class对象
+
+**连接阶段--验证**
+
+1. 目的是为了确保Class文件的字节流中包含的信息复合当前虚拟机的要求，并且不会危害虚拟机自身的安全。
+2. 包括：文件格式验证（是否以魔数oxcafebabe开头）、元数据验证，字节码验证和符号引用验证
+3. 可以考虑使用-Xverify：none 参数来关闭大部分的类验证措施，缩短虚拟机类加载的时间。
+
+**连接阶段--准备**
+
+1. JVM会在该阶段对静态变量，分配内存并默认初始化（对应数据类型的默认初始值，如0,0L，null，false等）。这些变量所使用的内存都将在方法区中进行分配
+
+```java
+Class A{
+    //分析类加载的链接阶段-准备 属性是如何处理
+    public int n1 = 10;
+    // n1 是实例属性，不是静态变量，因此在准备阶段，是不会分配内存
+    public static int n2 = 20;
+    // n2 是静态属性， 分配内存 进行默认初始化0，而不是20，初始化成20要等到类加载的初始化阶段才可以
+    public static final int n3 = 30;
+    // n3 是static final 是常量，它和静态变量不一样，因为一旦赋值就不改变，所以直接初始化成30
+}
+```
+
+**连接阶段--解析**
+
+虚拟机将常量池内的符号引用替换为直接引用的过程。
+
+**Initialization--初始化**
+
+1. 到初始化阶段，才真正开始执行类中定义的java程序代码，此阶段是执行<clinit>()方法的过程。
+2. <clinit>()方法是由编译器按语句在源文件中出现的顺序，依次自动收集类中的所有**静态变量**的赋值动作和**静态代码块**中的语句，并进行合并。
+3. 虚拟机会保证一个类的<clinit>()方法在多线程环境中被正确的加锁、同步，如果多个线程同时去初始化一个类，那么只会有一个线程去执行这个类的<clinit>()方法，其他线程都需要阻塞等待，直到活动线程执行<clinit>()方法完毕。
+
+### 通过反射获取类的结构信息
+
+java.lang.Class类
+
+1. getName：获取全类名
+2. getSimpleName：获取简单类名
+3. getFields：获取所有public修饰的属性，包含本类以及父类的
+4. getDeclaredFields：获取本类中所有属性
+5. getMethods：获取所有public修饰的方法，包含本类以及父类的
+6. getDeclaredMethods：获取本类中所有方法
+7. getConstructors：获取所有public修饰的构造器
+8. getDeclaredConstructors：获取本类中所有构造器
+9. getPackage：以Package形式返回包信息
+10. getSuperClass：以Class形式返回父类信息
+11. getInterfaces：以Class[]形式返回接口信息
+12. getAnnotations：以Annotation[]形式返回注解信息
+
+java.lang.reflect.Field类
+
+1. getModifiers：以int形式返回修饰符【说明：默认修饰符是0，public是1，private是2，protected是4，static是8，final是16】
+2. getType：以Class形式返回类型
+3. getName：返回属性名
+
+java.lang.reflect.Method类
+
+1. getModifiers：以int形式返回修饰符【说明：默认修饰符是0，public是1，private是2，protected是4，static是8，final是16】
+2. getReturnType：以Class形式获取 返回类型
+3. getName：返回方法名
+4. getParameterTypes：以Class[]返回参数类型数组
+
+java.lang.reflect.Constructor类
+
+1. getModifiers：以int形式返回修饰符
+2. getName：返回构造器名（全类名）
+3. getParameterTypes：以Class[]返回参数类型数组
+
+### 通过反射访问类中的成员
+
+通过反射创建对象
+
+1. 方式一：调用类中的public修饰的无参构造器
+2. 方式二：调用类中的指定构造器
+3. Class类相关方法
+   - newInstance：调用类中的无参构造器，获取对应类的对象
+   - getConstructor(Class...clazz)：根据参数列表，获取对应的public构造器对象
+   - getDecalaredConstructor(Class...clazz)：根据参数列表，获取对应的所有构造器对象
+4. Constructor类相关方法
+   - setAccessible：爆破 ，使用反射可以访问private构造器
+   - newInstance(Object...obj)：调用构造器
+
+通过反射访问属性
+
+1. 根据属性名获取Field对象
+   Field f = clazz对象.getDeclaredField(属性名);
+2. 爆破
+   f.setAccessible(true)； // f是Field，设置成爆破模式，可以对私有属性进行赋值和访问。
+3. 访问
+   f.set(o,值);
+   syso(f.get(o));
+4. 如果是静态属性，则set和get中的参数o，可以写成null
+
+通过反射访问类中的方法
+
+1. 根据方法名和参数列表获取Method方法对象：Method m = clazz.getDeclaredMethod(方法名,XX.class);
+2. 获取对象：Object o = clazz.newInstance();
+3. 爆破：m.setAccessible(true)；
+4. 访问：Object ReturnValue = m.invoke(o,实参列表);
+5. 注意：如果是静态方法，则invoke的参数o，可以写成null。
+5. 在反射中，如果方法有返回值，统一返回的是Object，但是他运行类型和方法定义的返回类型一致。
+
+728
