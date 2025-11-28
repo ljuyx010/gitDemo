@@ -4606,6 +4606,28 @@ CREATE TABLE `test` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 ```
 
- 
+###  修改表
 
-749
+使用ALTER TABLE语句追加，修改或删除列的语法
+
+添加列：
+
+`ALTER TABLE tablename ADD(column datatype [DEFAULT expr] [,colunm datatype]...) ;` expr 可以是 after 列名（列添加到某列后）
+
+修改列：
+
+`ALTER TABLE tablename MODIFY (column datatype [DEFAULT expr] [,colunm datatype]...);`
+
+```alter table tablename change `列名` `新列名` varchar(64) not null default ' ';``` 修改列名
+
+删除列：
+
+`ALTER TABLE tablename DROP (column);`
+
+查看表的结构：` desc tabename;`  显示所有列
+
+修改表名：`Rename table 表名 to 新表名;`
+
+修改表字符集：`alter table 表名 character set 字符集;`
+
+750
