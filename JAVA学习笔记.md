@@ -4489,4 +4489,123 @@ java.lang.reflect.Constructor类
 
 ## Mysql
 
-731
+连接到mysql服务的指令
+
+`net stop mysql` 停止mysql服务
+
+`net start mysql` 启动mysql服务
+
+`mysql -h 主机IP -P 端口 -u 用户名 -p密码` 连接mysql数据库
+
+`show databases;` 展示所有的数据库
+
+`use XXXXX;`  更改正在使用的数据库
+
+`show tables;` 展示正在使用数据库中的所有表
+
+`quit` 退出mysql数据库
+
+注意：-p密码 不要有空格，-p后没有写密码，回车后会要求输入密码
+-h 和-P 不写，默认就是连接到本地，端口默认是3306
+
+**Sql语句分类**
+
+DDL：数据定义语句 [create 库，表]
+
+DML：数据操作语句 [insert，update，delete]
+
+DQL：数据查询语句 [select]
+
+DCL：数据控制语句 [管理数据库：比如用户权限 grant revoke]
+
+### 创建数据库
+
+`CREATE DATABASE [IF NOT EXISTS] db_name [参数1] [参数2];`
+
+[IF NOT EXISTS]：判断数据库是否存在，防止重复
+
+参数1：character set：指定数据库采用的字符集，如果不指定默认是utf-8；
+
+参数2：collate：指定数据库字符集的校队规则（常用的utf8_bin[区分大小写],utf8_general_ci[不区分大小写]）默认的是utf8_general_ci
+
+`DROP DATABASE db_name;` 删除数据库
+
+`show create database db_name；` 显示数据库创建语句
+
+`drop database [if exists] db_name;` 判断数据库是否存在，存在就删除数据库【慎用】
+
+注意：在创建数据库，表的时候，为了规避关键字，可以使用反引号括起来。
+
+### 备份和恢复
+
+备份命令：必须早dos下运行
+
+`mysqldump -u 用户名 -p密码 -B 数据库1 数据库2 数据库n > 文件名.sql`
+
+备份数据表
+
+`mysqldump -u 用户名 -p密码 数据库 表1 表2 表n > d:\\文件名.sql`
+
+恢复数据库命令（注意：进入mysql命令行再执行）
+
+`Source 文件名.sql`
+
+### 创建表
+
+`CREATE TABLE table_name (field1 datatype,field2 datatype,field3 datatype) character set 字符集 collate 校对规则 engine 引擎;`
+
+field: 指定列名 datatype：指定列类型（字段类型）
+
+character set：字符集如不指定则采用所在数据库的字符集
+
+collate：如不指定则采用所在数据库的校对规则
+
+engine：存储引擎 常用的有myisam 或者innodb
+
+### Mysql常用数据类型
+
+| 分类             | 数据类型               | 说明                                                         |
+| ---------------- | ---------------------- | ------------------------------------------------------------ |
+| 数值类型         | BIT(M)                 | 位类型，m指定位数bit(8)就表示一个字节0-255，默认值1，范围1-64 |
+|                  | TINYINT[UNSIGNED]      | 带符号的范围是-128到127，无符号0到255，默认是由符号占用1个字节 |
+|                  | SMALLINT[UNSIGNED]     | 带符号是负2^15到2^15-1，无符号0到2^16-1占用2个字节           |
+|                  | MEDIUMINT[UNSIGNED]    | 带符号是负2^23到2^23-1，无符号0到2^24-1占用3个字节           |
+|                  | INT[UNSIGNED]          | 带符号是负2^31到2^31-1，无符号0到2^32-1占用4个字节           |
+|                  | BIGINT[UNSIGNED]       | 带符号是负2^63到2^63-1，无符号0到2^64-1占用8个字节           |
+|                  | FLOAT[UNSIGNED]        | 占用空间4个字节                                              |
+|                  | DOUBLE[UNSIGNED]       | 表示比float精度更大的小数，占用空间8个字节                   |
+|                  | DECIMAL(m,d)[UNSIGNED] | 定点数M指定长度，D表示小数点的位数，如果D=0表示没有小数，M最大65默认是10，D最大是30默认是0 |
+| 文本，二进制类型 | CHAR(size)             | 固定长度字符串，最大255个**字符**。                          |
+|                  | VARCHAR(size)          | 可变长度字符串0~65535[2^16-1]个**字节**。utf8编码（3个字节表示1个字符）最大21844个字符，1-3个字节用于记录大小。字符计算公式：size=(65535-3)/编码1个字符占用的字节数 |
+|                  | BLOB和LONGBLOB         | 二进制数据BLOB(0~2^16-1),LONGBLOB(0~2^32-1)                  |
+|                  | TEXT 和LONGTEXT        | 文本text(0~2^16-1)，longtext(0~2^32-1)                       |
+| 时间日期         | DATE                   | 日期类型（YYYY-MM-DD）                                       |
+|                  | DATETIME               | （YYYY-MM-DD HH:mm:ss）                                      |
+|                  | TimeStamp              | 表示时间戳，它可用于自动记录insert，update操作的时间         |
+
+数据类型选用规则：在能够满足需求的情况下，尽量选择占用空间小的类型。（保小不保大）
+
+字符串使用细节“
+
+1. char(4) ：这个4表示字符数（最大255），不是字节数，不管是中文还是字母都是放4个，按字符计算。
+   varchar(4)：这个4表示字符数，不管是字母还是中文都以定义好的表的编码来存放数据。
+   不管是中文还是英文字母，都是最多存放4个，是按照字符来存放的。
+2. char(4) 是定长（固定的大小），就是说，即使你插入‘11’，也会占用分配的4个字符的空间
+   varchar(4)是变长，就是说，如果你插入了'aa'，实际占用空间大小并不是4个字符，而是按照实际占用空间来分配（varchar本身还需要用1-3个字节来记录存放内容长度）
+3. 什么时候使用char，什么时候使用varchar
+   - 如果数据是定长，推荐使用char，比如md5的密码，邮编，手机号，身份证号等
+   - 如果一个字段的长度是不确定，我们使用varchar，比如留言，文章
+   - 查询速度：char > varchar
+4. 在存放文本时，也可以使用text数据类型，可以将text列视为varchar列，注意text不能有默认值，大小0-2^16字节，如果希望存放更多字符，可以选择 mediumtext（0-2^24）或者longtext（0-2^32）
+
+```sql
+CREATE TABLE `test` (
+  `id` int(11) DEFAULT NULL,
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    # 设置添加和修改自动更新时间戳
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+```
+
+ 
+
+749
