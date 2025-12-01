@@ -4745,4 +4745,40 @@ having 子句对分组后的结果进行过滤
 | MOD(num,denominator)        | 求余                                                         |
 | RAND([seed])                | 随机数，rand()的范围大于等于0，小于等于1，使用了seed（seed不变）就会产生相同的随机数 |
 
-763
+### 时间日期相关函数
+
+| CURRENT_DATE()                                               | 当前日期                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| CURRENT_TIME()                                               | 当前时间                                                     |
+| CURRENT_TIMESTAMP()                                          | 当前时间戳                                                   |
+| DATE(datetime)                                               | 返回datetime的日期部分                                       |
+| DATE_ADD(date2,interval d value_type)                        | 在date2中加上d日期或时间                                     |
+| DATE_SUB(date2,interval d value_type)                        | 在date2上减去一个d日期或  时间                               |
+| DATEDIFF(date1,date2)                                        | 两个日期差（天）                                             |
+| TIMEDIFF(time1,time2)                                        | 两个时间差（多少小时多少分钟多少秒）                         |
+| NOW()                                                        | 当前时间                                                     |
+| YEAR\|Month\|DATE(datetime) FROM_UNIXTIME()<br />unix_timestamp() | 年月日,unix_timestamp()从1970-01-01到现在的秒数，FROM_UNIXTIME()把时间戳转成一个指定格式的日期时间 |
+
+```sql
+-- 日期增加80年
+select DATE_ADD('1989-04-27',interval 80 year) from dual;
+-- DATE_ADD和DATE_SUB的value_type可以是Year，month，day，hour，minute，second,并且date可以是date，datetime，timestamp中的任一种。
+-- sql中的日期时间都是 yyyy-mm-dd HH：ii：ss的格式
+```
+
+### 加密和系统的函数
+
+| USER()                                         | 查询用户 （返回用户@IP地址）                                 |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| DATABASE()                                     | 数据库名称                                                   |
+| MD5(str)                                       | 为字符串算出一个MD5 32的字符串常用（用户密码）加密           |
+| PASSWORD(str)<br />select * from mysql.user \G | 从原文密码str 计算并返回密码字符串，通常用于对mysql数据库的用户密码加密 |
+
+### 流程控制函数
+
+| IF(expr1,expr2,expr3)                                        | 如果expr1位true，则返回expr2，否则返回expr3                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| IFNULL(expr1,expr2)                                          | 如果expr1不为空null，则返回expr1，否则返回expr2              |
+| select CASE when expr1 then expr2 when expr3 then expr4 ELSE expr5 END；【类似多重分支】 | 如果expr1位true，则返回expr2，如果expr3为t，返回expr4，否则返回expr5 |
+
+768
