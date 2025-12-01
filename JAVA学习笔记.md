@@ -4630,4 +4630,119 @@ CREATE TABLE `test` (
 
 修改表字符集：`alter table 表名 character set 字符集;`
 
-750
+### CRUD
+
+添加数据
+
+`INSERT INTO table_name [(column[,column...])] VALUES (value [,value...]);`
+
+修改数据
+
+`UPDATE tb_name SET col_name=expr [,col_name2=expr2...] [WHERE where_definition];`
+
+删除数据
+
+`DELETE from tb_name [WHERE where_definition];`
+
+查询数据
+
+`SELECT [DISTINCT] *|{column1,column2,column3...} FROM tablename;`
+
+注意事项：
+
+1. select指定查询那些列的数据。
+2. column指定列名
+3. *号代表查询所有列
+4. From指定查询哪张表
+5. DISTINCT可选，指显示结果时，去除重复数据
+
+使用表达式对查询的列进行运算
+
+`SELECT *|{column1|expression,column2|expression...} FROM tablename;`
+
+在select语句中可以使用as语句
+
+`SELECT column as 别名 from 表名;`
+
+在where子句中经常使用的运算符
+
+| 比较运算符 | >、 <、 >=、 <= 、= 、<> 、!= | 大于，小于，大于（小于）等于，不等于           |
+| ---------- | ----------------------------- | ---------------------------------------------- |
+|            | BETWEEN...AND                 | 显示在某一区间的值（是闭区间）等价于 >= and <= |
+|            | in（set）                     | 显示在in列表中的值，例：in(100,200)            |
+|            | LIKE '', NOT LIKE ''          | 模糊查询                                       |
+|            | IS NULL                       | 判断是否为空                                   |
+| 逻辑运算符 | and                           | 多个条件同时成立                               |
+|            | or                            | 多个条件任一成立                               |
+|            | not                           | 不成立，例：where not (salary>100)             |
+
+使用order by 子句排序查询结果
+
+`SELECT column1,column2,column3... From tb_name order by column asc|desc,...`
+
+1. Order by 指定排序的列，排序的列既可以是表中的列名，也可以是select 语句后指定的列名
+2. ASC 升序[默认]，desc降序
+3. order by 子句应位于select语句的结尾。
+
+### 统计函数
+
+**Count** 返回行的总数
+
+`select count(*)|count(列名) from tablename [WHERE where_definition]`;
+
+count(*) 返回满足条件的记录的行数
+
+count(A列)：统计满足条件的A列有多少个，但是会排除A列为null的情况
+
+**SUM** 函数返回满足where条件的行的和（一般用在数值列）
+
+`select sum(列名) {,sum(列名)...} from tablename [where where_definition];`
+
+注意：sum只对数值起作用，否则没有意义。
+
+**AVG** 返回列的平均值
+
+**Max** 返回列的最大值
+
+**Min** 返回列的最小值
+
+### 分组查询
+
+group by 子句对列进行分组
+
+`SELECT column1,column2,column3...From table group by column [,column2]`
+
+having 子句对分组后的结果进行过滤
+
+`SELECT column1,column2,column3...From table group by column having ...`
+
+### 字符串相关函数
+
+| CHARSET(str)                             | 返回字符串的字符集                                   |
+| ---------------------------------------- | ---------------------------------------------------- |
+| CONCAT(string2[,...])                    | 连接字符串                                           |
+| INSTR(string,substring)                  | 返回substring在string中出现的位置，没有返回0         |
+| UCASE(string)                            | 转成大写                                             |
+| LCASE(string)                            | 转成小写                                             |
+| LEFT(string,length),RIGHT(string,length) | 从string中的左边起取length个字符,右边取              |
+| LENGTH(string)                           | string长度【按照字节】                               |
+| REPLACE(str,search_str,replace_str)      | 在str中用replace_str替换search_str                   |
+| STRCMP(string1,string2)                  | 逐字符比较两字串大小相等返回0                        |
+| SUBSTRING(str,position[,length])         | 从str的position位开始（从1开始计算），去length个字符 |
+| LTRIM(string), RTRIM(string)，trim       | 去除前端空格或后端空格或前后都去                     |
+
+### 数学相关函数
+
+| ABS(num)                    | 绝对值                                                       |
+| --------------------------- | ------------------------------------------------------------ |
+| BIN(decimal_number)         | 十进制转二进制                                               |
+| CEILING(num)                | 向上取证，得到比num大的最小整数                              |
+| CONV(num,from_base,to_base) | 进制转换                                                     |
+| FLOOR(num)                  | 向下取整，得到比num小的最大整数                              |
+| FORMAT(num,decimal_places)  | 保留decimal_places位的小数（四舍五入）                       |
+| HEX(decimalNumber)          | 转十六进制                                                   |
+| LEAST(number,number2[,...]) | 求最小值                                                     |
+| MOD(num,denominator)        | 求余                                                         |
+| RAND([seed])                | 随机数，rand()的范围大于等于0，小于等于1，使用了seed（seed不变）就会产生相同的随机数 |
+
+763
