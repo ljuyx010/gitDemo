@@ -4654,7 +4654,7 @@ CREATE TABLE `test` (
 2. column指定列名
 3. *号代表查询所有列
 4. From指定查询哪张表
-5. DISTINCT可选，指显示结果时，去除重复数据
+5. **DISTINCT**可选，指显示结果时，去除重复数据
 
 使用表达式对查询的列进行运算
 
@@ -4671,7 +4671,7 @@ CREATE TABLE `test` (
 |            | BETWEEN...AND                 | 显示在某一区间的值（是闭区间）等价于 >= and <= |
 |            | in（set）                     | 显示在in列表中的值，例：in(100,200)            |
 |            | LIKE '', NOT LIKE ''          | 模糊查询                                       |
-|            | IS NULL                       | 判断是否为空                                   |
+|            | IS NULL                       | 判断是否为空（不能使用 = null）                |
 | 逻辑运算符 | and                           | 多个条件同时成立                               |
 |            | or                            | 多个条件任一成立                               |
 |            | not                           | 不成立，例：where not (salary>100)             |
@@ -4781,4 +4781,145 @@ select DATE_ADD('1989-04-27',interval 80 year) from dual;
 | IFNULL(expr1,expr2)                                          | 如果expr1不为空null，则返回expr1，否则返回expr2              |
 | select CASE when expr1 then expr2 when expr3 then expr4 ELSE expr5 END；【类似多重分支】 | 如果expr1位true，则返回expr2，如果expr3为t，返回expr4，否则返回expr5 |
 
-768
+### 查询加强
+
+使用where子句
+
+在mysql中，日期类型可以直接比较 `select * from emp where hiredate >'1992-01-01';`
+
+日期比较时，必须注意格式
+
+使用like操作符
+
+%：表示0到多个任意字符
+
+_：表示单个任意字符
+
+分页查询
+
+`select ... limit start,rows`表示从start+1行开始取，取出rows行，start从0开始计算
+分页公式：limit 每页显示记录数X（第n页-1），每页显示记录数
+
+如果select 语句同时包含有group by，having，limit，order by 那么他们是顺序是group by，having，order by，limit。
+
+```sql
+# select 和 update 混用 
+UPDATE dp_alumnus a INNER JOIN (SELECT id,SUBSTR(SUBSTR(bybj,4),1,length(SUBSTR(bybj,4))-1) as bj FROM dp_alumnus) b on a.id = b.id SET a.bybj=b.bj
+ALTER TABLE dp_alumnus MODIFY bybj INT(2) DEFAULT NULL
+```
+
+### 多表查询
+
+`select * from emp,dept;`
+
+同时查询两张表在默认情况下：1.从第一张表中取出一行和第二张表的每一行进行组合，返回结果[含有两张表的所有列]2. 一共返回的记录数是第一张表的行数*第二张表的行数3.这样多表查询默认处理返回的结果，称为笛卡尔集。4.解决这个多表的关键就是要写出正确的过滤where条件 `select * from emp,dept where emp.depno = dept.deptno;`
+
+小技巧：多表查询的条件不能少于表的个数-1，否则会出现笛卡尔集
+
+**自连接**
+
+自连接是指在同一张表的连接查询【将同一张表看做两张表】
+
+`select * from emp，emp;`这种写法报表名不是唯一的错误，正确的写法应该是：
+
+`select * from emp woker,emp boss;` 给表设置一个别名，然后通过正确的where来过滤
+
+`select woker.ename as '职员名',boss.ename as '上级名' from emp woker,emp boss where woker.mgr = boss.empno;`
+
+自连接的特点：1. 把同一张表当做两张表使用 2. 需要给表取别名： `表名 表别名`，表取别用不用as，as是字段别名使用 3.列名不明确可以指定列的别名：`列名 as 列别名`
+
+### 子查询
+
+子查询是指嵌入在其他sql语句中的select语句，也叫嵌套查询
+
+单行子查询是指只返回一行数据的子查询语句
+
+`select * from emp where deptno =(select deptno from emp where name='simth');`
+
+多行子查询指返回多行数据的子查询 使用关键词 in
+
+`select name,job,sal,deptno from emp where job in(select distinct job from emp where deptno =10) and deptno <> 10; `
+
+把子查询当做一张临时表可以解决很多复杂的查询
+
+`select goods_id,ecs_goods.cat_id,goods_name,shop_price from ecs_goods,(select cat_id,max(shop_price) as max_price from ecs_goods group by cat_id) temp where ecs_goods.cat_id=temp.cat_id and ecs_goods.shop_price=temp.max_price;`
+
+**all 操作符**
+
+`select ename,sal,deptno from emp where sal> All(select sal from emp where deptno = 30);` #查询工资比30号部门的所有员工的工资都高的员工的姓名，工资和部门（相当于sal>max）
+
+**ANY 操作符**
+
+查询工资比30号部门的任何一个员工的工资都高的员工的姓名，工资和部门(相当于sal>min)
+
+`select ename,sal,deptno from emp where sal> ANY(select sal from emp where deptno = 30);`
+
+**多列子查询**
+
+多列子查询是指查询返回多个列数据的子查询语句
+
+语法：`(字段1，字段2...)=(select 字段1,字段2 from...)`
+
+```sql
+# 查询与smith同部门同岗位的其他所有员工
+# 1.分析，得到smith的部门和岗位
+select deptno，job from emp where ename = 'smith';
+#2.查询同部门同岗位的 使用多列子查询匹配
+select ename from emp where (deptno,job)=(select deptno，job from emp where ename = 'smith') and ename != 'smith';
+```
+
+### 表复制
+
+自我复制数据（蠕虫复制）
+
+有时，为了对某个sql语句进行效率测试，我们需要海量数据时，可以使用此法为表创建海量数据。
+
+```insert into my_table (id,`name`,sal,job,deptno) select empno,ename,sal,job,deptno from emp;``` 复制emp表的数据到my_table表
+
+自我复制：`insert into my_table select * from my_table;`
+
+复制表结构：`create table my_tab like emp;`
+
+去除表中的重复记录：思路分析1.可以先创建一个临时表 like 要去重的表2.select DISTINCT * 查询去重的数据3.insert into 临时表 select distinct * from 要去重的表 4.清除去重的表数据5.把临时表的数据insert 到去重的表5.drop临时表
+
+### 合并查询
+
+有时在实际应用中，为了合并多个select语句的结果，可以使用集合操作符号union，union all
+
+1. union all ：该操作符用于取得两个结果集的并集。当使用该操作符时，不会取消重复行。
+   `select ename,sal,job from emp where sal>2500 union all select ename,sal,job from emp where job='manager';`
+2. union ：该操作符与union all相似，但是会自动去掉结果集中重复行
+
+### 外连接
+
+前面学习的多表查询，是利用where子句对多表形成的笛卡尔集进行筛选，根据关联条件，显示所有匹配的记录，匹配不上的，则不显示。
+
+1. 左外连接（如果左侧的表完全显示我们就说是左外连接，即左侧的表和右侧的表没有匹配的，也把左侧的表数据完全显示出来）`select ..from  左表 left join 右表 on 条件`
+2. 右外连接（如果右侧的表完全显示我们就说是右外连接）`select ..from  左表 right join 右表 on 条件`
+
+### mysql 约束
+
+约束用于确保数据库的数据满足特定的商业规则。
+
+在mysql 中，约束包括：not null(不为空）,unique(唯一）,primary key(主键）,foreign key(外键）和check(检查）五种。
+
+**primary key**：用于唯一的标识表行的数据，当定义主键约束后，该列不能重复。
+
+`语法：字段名 字段类型 primary key`
+
+主键的细节：
+
+1. primary key 不能重复而且不能为null
+2. 一张表最多只能有一个主键，但可以是复合主键（`primary key (id,ename)`id+name才是主键）
+3. 主键的指定方式有两种：直接在字段名后指定：字段名 primary key，在表定义最后写 primary key(列名);
+4. 使用desc 表名，可以看到primary key的情况。
+
+**not null**： 如果在列上定义了not null，那么当插入数据时，必须为列提供数据。
+`语法：字段名 字段类型 not null`
+
+**unique**：当定义了唯一约束后，该列的值是不能重复的。
+`语法：字段名 字段类型 unique`
+
+细节：如果没有指定not null，则unique字段可以有多个null，一张表可以有多个unique字段。
+
+786
