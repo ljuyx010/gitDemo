@@ -5116,4 +5116,6 @@ mysql数据报主要支持六种类型，分别是：csv，menory，archive，MR
 2. 如果需要支持事务，选择innodb
 3. Memory存储引擎就是将数据存储在内存中，由于没有磁盘I/O的等待，速度极快。但由于是内存存储引擎，所做的任何修改在mysql服务重启后都将消失。
 
+`alter table tbname engine=存储引擎;` 修改表的存储引擎
+
 805
