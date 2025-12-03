@@ -4956,4 +4956,164 @@ oracle和sql server均支持check，但是mysql5.7目前还不支持check，只�
 4. 自增长默认从1开始，也可以通过如下命令修改`alter table 表名 auto_increment = 数字;`
 5. 如果添加数据时，给自增长字段指定的有值，则以指定的值为准
 
-791
+### mysql索引
+
+说起提高数据库性能，索引是最物美价廉的东西了，不用加内存，不用改程序，不用调sql，查询速度就可以提高百倍千倍。
+
+创建索引本身会占用空间，数据库表的体积会变大
+
+创建索引后，只对创建了索引的列有效，查询没有索引的字段依然会比较慢
+
+没有索引会进行全表扫描，使用索引会形成一个索引的数据结构，比如二叉树。
+
+索引的代价：1. 增加磁盘占用 2.对dml（update，delete，insert）语句的效率影响
+
+**索引的类型**
+
+1. 主键索引，主键自动的为主索引（类型primary）
+2. 唯一索引（UNIQUE）
+3. 普通索引（INDEX）
+4. 全文索引（FULLTEXT）【适用于MyISAM】，一般开发中，不使用mysql自带的全文索引，而是考虑使用：java框架的全文搜索Solr和Elasticsearch（ES）
+
+**索引使用**
+
+1.添加索引
+`create [unique] index index_name on tbname(col_name [(length)] [ASC|DESC], ...);` 添加[唯一]普通索引
+
+`alter table tbname ADD INDEX [index_name] (index_col_name,...);` 添加普通索引
+
+2.添加主键（索引）
+
+` alter table 表名 ADD PRIMARY KEY （列名，...）;`
+
+3.删除索引
+
+`DROP INDEX index_name ON tb_name;`
+
+`alter table tbname drop index index_name;`
+
+4.删除主键索引 比较特别
+
+`alter table tbname drop primary key;`
+
+5.显示表索引
+
+`show index from tbname; `
+
+`show indexes from tbname; `
+
+`show keys from tbname; `
+
+6.如何选择索引：如果某列的值，是不会重复的，则优先考虑使用unique索引，否则使用普通索引。
+
+哪些列上适合使用索引：
+
+1. 较频繁的作为查询条件字段应该创建索引
+2. 唯一性太差的字段不适合单独创建索引，即使频繁作为查询条件
+   `select * from emp where sex='男'`
+3. 更新非常频繁的字段不适合创建索引
+4. 不会出现在wehere子句中字段不该创建索引
+
+### mysql事务
+
+事务用于保证数据的一致性，它由一组相关的dml语句组成，该组的dml语句要么全部成功，要么全部失败。如：转账就要用事务来处理，用以保证数据的一致性。
+
+**事务和锁**
+
+当执行事务操作时（dml语句），mysql会在表上加锁，防止其他用户改表的数据。这对用户来讲是非常重要的。
+
+mysql 数据库控制台事务的几个重要操作
+
+1. start transaction  --开始一个事务
+2. savepoint 保存点名 --设置保存点
+3. rollback to 保存点名 --回退事务
+4. rollback  --回退全部事务
+5. commit  --提交事务，所有的操作生效，不能回退
+
+事务细节：
+
+1. 如果不开始事务，默认情况下，dml操作是自动提交的，不能回滚。
+2. 如果开始一个事务，你没有创建保存点，你可以执行rollback，默认是回退到事务开始的状态
+3. 你可以再这个事务中（还没有提交时），创建多个保存点，比如：savepoint aaa；执行dml，savepoint bbb；
+4. 你可以再事务没有提交前，选择回退到那个保存点。（提交后所有的保存点删除，如果之间回滚到aaa，则中间的保存到（bbb）就会被删除，不能再回到bbb。）
+5. mysql的事务机制需要innodb的存储引擎才可以使用，MyISAM不好使
+6. 开始一个事务 start transaction 或 set autocommit=off；
+
+**事务的隔离级别**
+
+多个连接开启各自事务操作数据库中数据时，数据库系统要负责隔离操作，以保证各个连接在获取数据时的准确性。
+
+脏读（dirty read）：当一个事务读取另一个事务尚未提交的改变时，产生脏读
+
+不可重复读（nonrepeatable read）：同一查询在同一事务中多次进行，由于其他提交事务所做的修改或删除，每次返回不同的结果集，此时发生不可重复读。
+
+幻读（phantom read）：同一查询在同一事务中多次进行，由于其他提交事务所做的插入操作，每次返回不同的结果集，此时发生幻读。
+
+mysql隔离级别定义了事务与事务之间的隔离程度。
+
+| mysql隔离级别                | 脏读 | 不可重复读 | 幻读 | 加锁读 |
+| ---------------------------- | ---- | ---------- | ---- | ------ |
+| 读未提交（read uncommitted） | √    | √          | √    | 不加锁 |
+| 读已提交（read committed）   | ×    | √          | √    | 不加锁 |
+| 可重复读（repeatable read）  | ×    | ×          | ×    | 不加锁 |
+| 可串行化（serializable）     | ×    | ×          | ×    | 加锁   |
+
+`select @@tx_isolation;` 查询当前mysql会话的隔离级别
+
+`select @@global.tx_isolation;` 查看系统的隔离级别
+
+`set session transaction isolation level read uncommitted` 设置当前会话的隔离级别
+
+`set global transaction isolation level read uncommitted` 设置系统的隔离级别
+
+mysql默认的事务隔离级别是repeatable read，一般情况下，没有特殊要求，没有必要修改（因为该级别可以满足绝大部分项目需求）
+
+**事务的acid特性**
+
+原子性（Atomicity）
+
+原子性是指事务是一个不可分割的工作单位，事务中的操作要么都发生，要么都不发生。
+
+一致性（Consistency）
+事务必须使数据库从一个一致性状态变换到另外一个一致性状态
+
+隔离性（Isolation）
+
+事务的隔离性是多个用户并发访问数据库时，数据库为每一个用户开启的事务，不能被其他事务的操作所干扰，多个并发事务之间要相互隔离。
+
+持久性（Durability）
+
+持久性是指一个事务一旦被提交，它对数据库中数据的改变就是永久性的，接下来即使数据库发生故障也不应该对其有任何影响
+
+### mysql 表类型和存储引擎
+
+mysql的表类型由存储引擎（storage Engines）决定，主要包括MyISAM，innodb，memory等。
+
+mysql数据报主要支持六种类型，分别是：csv，menory，archive，MRG_MyISAM，MyISAM，innodb。
+
+这六种又分为两类，一个是“事务安全型”（transaction-safe），比如：Innodb，其余都属于第二类，称为“非事务安全型”（non-transaction-safe）[myisam和memory]。
+
+| 特点         | Myisam | Innodb | Memory | Archive |
+| ------------ | ------ | ------ | ------ | ------- |
+| 批量插入速度 | 高     | 低     | 高     | 非常高  |
+| 事务安全     |        | 支持   |        |         |
+| 全文索引     | 支持   |        |        |         |
+| 锁机制       | 表锁   | 行锁   | 表锁   | 行锁    |
+| 存储限制     | 没有   | 64TB   | 有     | 没有    |
+| B树索引      | 支持   | 支持   | 支持   |         |
+| 哈希索引     |        | 支持   | 支持   |         |
+| 集群索引     |        | 支持   |        |         |
+| 数据缓存     |        | 支持   | 支持   |         |
+| 索引缓存     | 支持   | 支持   | 支持   |         |
+| 数据可压缩   | 支持   |        |        | 支持    |
+| 空间使用     | 低     | 高     | N/A    | 非常低  |
+| 内存使用     | 低     | 高     | 中等   | 低      |
+| 支持外键     |        | 支持   |        |         |
+
+表的存储引擎选择：
+
+1. 如果不需要事务，处理的只是基本的crud操作，那么MyISAM是不二选择，速度快。
+2. 如果需要支持事务，选择innodb
+3. Memory存储引擎就是将数据存储在内存中，由于没有磁盘I/O的等待，速度极快。但由于是内存存储引擎，所做的任何修改在mysql服务重启后都将消失。
+
+805
