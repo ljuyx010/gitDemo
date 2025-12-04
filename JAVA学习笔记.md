@@ -4826,7 +4826,7 @@ ALTER TABLE dp_alumnus MODIFY bybj INT(2) DEFAULT NULL
 
 `select woker.ename as '职员名',boss.ename as '上级名' from emp woker,emp boss where woker.mgr = boss.empno;`
 
-自连接的特点：1. 把同一张表当做两张表使用 2. 需要给表取别名： `表名 表别名`，表取别用不用as，as是字段别名使用 3.列名不明确可以指定列的别名：`列名 as 列别名`
+自连接的特点：1. 把同一张表当做两张表使用 2. 需要给表取别名： `表名 表别名`， 3.列名不明确可以指定列的别名：`列名 as 列别名` 4.别名的as 可以用空格代替，因此如果是两个单词之间有空格的必须用“ ”括起来。
 
 ### 子查询
 
@@ -5164,4 +5164,276 @@ mysql中的用户，都存储在系统数据库mysql中的user表
 
 `set password for '用户名'@'登录位置' = password('新密码');`
 
-808
+**用户权限**
+
+| 权限                    | 意义                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| ALL [PRIVILEGES]        | 设置除GRANT OPTION之外的所有简单权限                         |
+| ALTER                   | 允许使用alter table                                          |
+| ALTER ROUTINE           | 更改或取消已存储的子程序                                     |
+| CREATE                  | 允许使用create table                                         |
+| CREATE ROUTINE          | 创建已存储的子程序                                           |
+| CREATE TABLESPACE       |                                                              |
+| CREATE TEMPORARY TABLES | 允许使用create temporary table                               |
+| CREATE USER             | 允许使用create user，drop user，rename user和revoke all privileges |
+| CREATE VIEW             | 允许使用create view                                          |
+| DELETE                  | 允许使用delete                                               |
+| DROP                    | 允许使用drop table                                           |
+| EVENT                   |                                                              |
+| EXECUTE                 | 允许用户允许已存储的子程序                                   |
+| FILE                    | 允许使用select...into outfile和load data infile              |
+| GRANT OPTION            | 允许授予权限                                                 |
+| INDEX                   | 允许使用create index和drop index                             |
+| INSERT                  | 允许使用insert                                               |
+| LOCK TABLES             | 允许对您拥有select权限的表使用lock tables                    |
+| PROCESS                 | 允许使用show full processlist                                |
+| PROXY                   |                                                              |
+| REFERENCES              | 未被实施                                                     |
+| RELOAD                  | 允许使用flush                                                |
+| REPLICATION CLIENT      | 允许用户询问从属服务器或主服务器的地址                       |
+| REPLICATION SLAVE       | 用于复制型从属服务器（从主服务器中读取二进制日志事件）       |
+| SELECT                  | 允许使用select                                               |
+| SHOW DATABASES          | show databases显示所有数据库                                 |
+| SHOW VIEW               | 允许使用show create view                                     |
+| SHUTDOWN                | 允许使用mysqlasmin shutdown                                  |
+| SUPER                   | 允许使用change master,kill,purge master logs和set global语句，mysqladmin debug命令，允许您连接（一次），即使已达到max_connections |
+| TRIGGER                 |                                                              |
+| UPDATE                  | 允许使用update                                               |
+| USAGE                   | “无权限”的同义词                                             |
+
+**给用户授权** 基本语法：
+
+`grant 权限列表 on 库.对象名 to '用户名'@'登录位置' [identified by '密码'];`
+
+说明：
+
+1. 权限列表，多个权限用逗号分开
+
+   `grant select on...`
+
+   `grant select,delete,create on ...`
+
+   `grant all [privileges] on ...`
+
+2. 特别说明
+   \*.\*：代表本系统重的所有数据库的所有对象（表，视图，存储过程）
+   库.\*：表示某个数据库中的所有数据对象(表，视图，存储过程等)
+
+3. identified by 可以省略，也可以写出。
+
+   - 如果用户存在，就是修改该用户的密码。
+   - 如果该用户不存在，就是创建该用户
+
+**回收用户授权**
+
+基本语法：`revoke 权限列表 on 库.对象名 from '用户名'@'登录位置';`
+
+**权限生效指令**
+基本语法：`flush privileges;`
+
+mysql管理的细节：
+
+1. 在创建用户的时候，如果不指定host，则为%，%表示所有ip都有连接权限`create user XXX;`
+2. 你也可以这样指定`create user 'XXX'@'192.168.1.%'`表示XXX用户在192.168.1.*的ip可以登录mysql
+3. 在删除用户的时候，如果host不是%，需要明确指定`'用户'@'host值'`
+
+## JDBC和连接池
+
+JDBC为了访问不同的数据库提供了统一的接口，为使用者屏蔽了细节问题。java程序员使用jdbc，可以连接任何提供了jdbc驱动程序的数据库系统，完成对数据库的各种操作。
+
+JDBC API是一系列的接口，它统一和规范了应用程序与数据库的连接、执行sql语句，并得到返回结果等各类操作，相关类和接口在java.sql与javax.sql包中。
+
+JDBC程序编写步骤
+
+1. 注册驱动 - 加载Driver类
+2. 获取连接 - 得到Connection
+3. 执行增删改查 - 发送SQl给mysql执行
+4. 释放资源
+
+### 获取数据连接的方式
+
+**方式1**：手动实例化mysql驱动类
+
+```java
+// 1.获取Driver实现类对象
+Driver driver = new com.mysql.jdbc.Driver();
+//2. 得到连接
+String url = "jdbc:mysql://localhost:3306/xgzhongyuan";
+// jdbc:mysql://是固定的协议通过jdbc方式连接mysql，
+// localhost是数据库的主机地址还可以是ip，3306是数据库的端口号，
+// xgzhongyuan是数据库的名称
+// mysql的连接本质就是前面学过的socket连接
+Properties properties = new Properties();
+// 将用户名和密码放入properties对象中
+properties.setProperty("user","root"); // 用户
+properties.setProperty("password","123456"); // 密码
+Connection connect = driver.connect(url, properties); // 连接数据库
+```
+
+**方式2**：通过反射动态获取mysql驱动实现类
+
+```java
+// 使用class类动态获取mysql驱动
+Class<?> aClass = Class.forName("com.mysql.jdbc.Driver");
+// 通过newInstance()反射driver实现类
+Driver driver = (Driver) aClass.newInstance();
+String url = "jdbc:mysql://localhost:3306/xgzhongyuan";
+Properties properties = new Properties();
+properties.setProperty("user","root"); // 用户
+properties.setProperty("password","123456"); // 密码
+Connection connect = driver.connect(url, properties); // 连接数据库
+```
+
+**方式3**：使用DriverManager替代Diver进行统一管理
+
+```java
+// 使用class类动态获取mysql驱动
+Class<?> aClass = Class.forName("com.mysql.jdbc.Driver");
+// 通过newInstance()反射driver实现类
+Driver driver = (Driver) aClass.newInstance();
+String url = "jdbc:mysql://localhost:3306/xgzhongyuan";
+String user = "root"; // 用户
+String password = "123456"; // 密码
+DriverManager.registerDriver(driver);//注册Driver驱动
+Connection connect = DriverManager.getConnection(url,user,password);// 连接数据库
+```
+
+**方式4**：使用class.forName自动完成注册驱动，简化代码（这种方法是使用最多的）
+
+```java
+// 使用反射加载Driver类
+//在加载Driver类时，Driver类的静态代码块已经完成了DriverManager注册
+/*
+static {
+        try {
+            DriverManager.registerDriver(new Driver());
+        } catch (SQLException var1) {
+            throw new RuntimeException("Can't register driver!");
+        }
+    }
+*/
+Class.forName("com.mysql.jdbc.Driver");
+String url = "jdbc:mysql://localhost:3306/xgzhongyuan";
+String user = "root"; // 用户
+String password = "123456"; // 密码
+Connection connect = DriverManager.getConnection(url,user,password);// 连接数据库
+```
+
+小提示：1.mysql驱动5.1.6可以无需`Class.forName("com.mysql.jdbc.Driver");`
+
+2.从jdk1.5以后使用了jdbc4，不再需要显示调用Class.forName()注册驱动而是自动调用驱动jar包下META-INF\services\java.sql.Driver文本中的类名称去注册
+
+3.建议还是写上，更加明确
+
+**方式5**：在方式4的基础上改进,增加配置文件，让连接mysql更加灵活
+
+```java
+// 创建配置文件，mysql.properties
+username=root
+password=123456
+url=jdbc:mysql://localhost:3306/test
+driver=com.mysql.jdbc.Driver
+    
+public void connect() throws IOException {
+        Properties properties = new Properties();
+        // 加载properites配置文件
+        properties.load(new FileInputStream("mysql.properties"));
+        String url = properties.getProperty("url");
+        String username = properties.getProperty("username");
+        String password = properties.getProperty("password");
+        String driver = properties.getProperty("driver");
+        try {
+            Class.forName(driver); //建议写上更明确
+            Connection connection = DriverManager.getConnection(url, username, password); // 注册驱动
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+### ResultSet结果集
+
+1. 表示数据库结果集的数据表，通常通过执行查询数据库的语句生成。
+2. ResultSet对象保持一个光标指向其当前的数据行。最初，光标位于第一行之前
+3. next方法将光标移动到下一行，并且由于在ResultSet对象中没有更多行时返回false，因此可以再while循环中来遍历结果集。
+
+```java
+Properties properties = new Properties();
+properties.load(new FileInputStream("mysqlTest\\src\\mysql.properties"));
+String url = properties.getProperty("url");
+String username = properties.getProperty("username");
+String password = properties.getProperty("password");
+String driver = properties.getProperty("driver");
+Class.forName(driver);
+Connection connection = DriverManager.getConnection(url, username, password); // 注册驱动
+Statement statement = connection.createStatement();
+String sql = "select * from common";
+ResultSet resultSet = statement.executeQuery(sql); //查询使用executeQuery(),DML语句使用executeUpdate()
+while (resultSet.next()) {  //循环读取结果集数据
+    //resultSet.getString("2") 如果是数字则表示第二列的数据
+    System.out.println(resultSet.getString("title")); //字符表示获取字段为title的数据
+}
+resultSet.close(); // 关闭结果集
+statement.close(); // 关闭执行语句
+connection.close(); // 关闭连接
+```
+
+### Statement
+
+1. Statement对象用于执行静态sql语句并返回其生成的结果的对象
+2. 在连接建立后，需要对数据库进行访问，执行命令或者sql语句，可以通过Statement、PreparedStatement[预处理]、CallableStatement[存储过程]
+3. Statement对象执行sql语句，存在sql注入风险
+4. Sql注入是利用某些系统没有对用户输入的数据进行充分的检查，而在用户输入数据中注入非法的Sql语句段或命令，恶意攻击数据库。
+5. 要防范Sql注入，只要用preparedStatement（从Statement扩展而来）取代Statement就可以了
+
+**preparedStatement** 预处理查询
+
+preparedStatement执行的sql语句中的参数用问号(?)来表示，调用preparedStatement对象的setXXX()方法来设置这些参数。setXXX(int,type)方法有两个参数，第一个参数是要设置的sql语句中的参数的索引(从1开始)，第二个是设置的Sql语句中的参数的值
+
+调用executeQuery(),返回ResultSet对象
+
+调用executeUpdate()：执行更新，包括增，删，修改
+
+execute()：执行任意的sql，返回布尔值
+
+预处理好处：
+
+1. 不再使用+拼接sql语句，减少语法错误
+2. 有效的解决了sql注入问题
+3. 大大减少了编译次数，效率较高
+
+```java
+// 模拟preparedStatement执行sql
+
+Scanner scanner = new Scanner(System.in);
+System.out.print("请输入管理员账号：");
+String admin_name=scanner.nextLine();
+System.out.print("请输入管理员密码：");
+String pass=scanner.nextLine();
+
+Properties properties = new Properties();
+properties.load(new FileInputStream("mysqlTest\\src\\mysql.properties"));
+String url = properties.getProperty("url");
+String username = properties.getProperty("username");
+String password = properties.getProperty("password");
+String driver = properties.getProperty("driver");
+Class.forName(driver);
+Connection connection = DriverManager.getConnection(url, username, password); // 注册驱动
+String sqlstr = "select * from admin where name=? and pass=?";//组织Sql语句
+// PreparedStatement对象实现了PreparedStatement接口的实现类的对象，生成预处理对象
+PreparedStatement preparedstatement = connection.preparedStatement(sqlstr);
+preparedStatement.setString(1,admin_name); // 1表示sql语句中的第一个问号
+preparedStatement.setString(2,pass);  // 2表示sql语句中的第2个问号
+ResultSet resultSet = preparedstatement.executeQuery(); //执行查询，不需要再传入sqlstr参数，因为上面已经预处理了
+while (resultSet.next()) {  //循环读取结果集数据
+    //resultSet.getString("2") 如果是数字则表示第二列的数据
+    System.out.println(resultSet.getString("title")); //字符表示获取字段为title的数据
+}
+resultSet.close(); // 关闭结果集
+preparedstatement.close(); // 关闭执行语句
+connection.close(); // 关闭连接
+```
+
+833
