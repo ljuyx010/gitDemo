@@ -5436,4 +5436,189 @@ preparedstatement.close(); // 关闭执行语句
 connection.close(); // 关闭连接
 ```
 
-833
+### 封装JDBCUtils
+
+在jdbc操作红，获取连接和释放资源的经常使用到，可以将其封装jdbc链接的工具类JDBCUtils。
+
+```java
+package JDBCUtils;
+
+import java.io.FileInputStream;
+import java.sql.*;
+import java.util.Properties;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2025/12/5 9:43
+ */
+public class JDBCUtils {
+    // 数据库连接信息,因为只需要读取一次,所以设置为静态变量
+    public static String url;
+    public static String user ;
+    public static String password ;
+    public static String driver ;
+
+    static {
+        try {
+            Properties properties = new Properties();
+            properties.load(new FileInputStream("mysqlTest\\src\\mysql.properties"));
+            url = properties.getProperty("url");
+            user = properties.getProperty("username");
+            password = properties.getProperty("password");
+            driver = properties.getProperty("driver");
+            Class.forName(driver);
+
+        } catch (Exception e) {
+            // 在实际开发中，我们可以这样处理
+            //1.将编译异常转成运行时异常
+            //2.这时调用者，可以选择捕获异常，也可以选择默认处理该异常，比较方便
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Connection getConnection() {
+        try {
+            // 返回数据库连接对象
+           return DriverManager.getConnection(url, user, password); // 注册驱动
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // 关闭数据库连接
+    /**
+     * 关闭数据库连接 需要关闭的对象可能有 1. ResultSet 2. PreparedStatement 或者 Statement 3. Connection
+     * @param set 数据集对象,如果没有数据集对象或数据不需要关闭则传入null
+     * @param connection 数据库连接对象
+     * @param statement 数据库操作对象
+     */
+    public static void close(ResultSet set, Statement statement,Connection connection) {
+        if (set != null) {
+            try {
+                set.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+}
+
+```
+
+使用JDBCUtils工具类
+
+```java
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import JDBCUtils.JDBCUtils;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2025/12/5 10:36
+ */
+public class JDBCUtils_use {
+
+    @SuppressWarnings({"all"})
+    public static void main(String[] args) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet set = null;
+        try {
+            // 获取mysql连接
+            connection = JDBCUtils.getConnection();
+            // 组织sql语句
+            String sql = "select * from common where title like ?";
+            // 预处理sql
+            statement = connection.prepareStatement(sql);
+            // 替换sql语句中的参数
+            statement.setString(1, "%孝感%");
+            // 执行sql语句，返回结果集
+            set = statement.executeQuery();
+            while (set.next()) {
+                System.out.println(set.getString("title"));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            // 释放资源
+            JDBCUtils.close(set, statement, connection);
+        }
+    }
+}
+
+```
+
+### 事务
+
+JDBC程序中当一个Connection对象创建时，默认情况下是自动提交事务，每次执行一个sql语句时，如果执行成功，就会想数据库自动提交，而不能回滚。
+
+JDBC程序中为了让多个SQL语句作为一个整体执行，需要使用**事务**
+
+调用Connection的setAutoCommit(false)可以取消自动提交事务
+
+在所有的SQL语句都成功执行后，调用Connection的commit();方法提交事务
+
+在其中某个操作失败或出现异常是，调用Connection的rollback();方法回滚事务
+
+### 批处理
+
+当需要成批插入或者更新记录时，可以采用java的批量更新机制，这一机制允许多语句一次性提交给数据库处理。通常情况下比单独提交处理更有效率。
+
+JDBC的批量处理语句包括下面方法：
+
+addBatch()：添加需要批量处理的SQl语句或参数
+
+executeBatch()：执行批量处理语句
+
+clearBatch()：清空批处理包的语句
+
+JDBC连接mysql时，如果要使用批处理功能柜，请在url中加参数？**rewriteBatchedSattement=true**
+
+批处理往往和PreparedStatement一起搭配使用，可以既减少编译次数，又减少运行次数，效率大大提高。
+
+### 数据库连接池
+
+传统的JDBC数据库连接使用DriverManager来获取，每次向数据库建立连接的时候都要将Connection加载到内存中，再验证ip地址，用户名和密码（0.05~1s时间）。需要数据库连接的时候，想向数据库要求一个，频繁的进行数据库连接操作将占用很多的系统资源，容易造成服务器崩溃。
+
+每一次数据连接，使用完后都得断开，如果程序出现异常而未能关闭，将导致数据库内存泄露，最终将导致重启数据库。
+
+传统获取连接的方式，不能控制创建的连接数量，如连接过多，也可能导致内存泄露，mysql崩溃。
+
+解决传统开发中的数据库连接问题，可以采用数据库连接池技术（Connection pool）。
+
+**数据库连接池基本介绍**
+
+预先在缓冲池中放入一定数量的连接，当需要建立数据库连接时，只需从“缓冲池”中取出一个，使用完毕之后再放回去。
+
+数据库连接池负责分配，管理和释放数据库连接，它允许应用程序**重复使用**一个现有的数据库连接，而不是重新建立一个。
+
+当应用程序想连接池请求的连接数超过最大连接数量时，这些请求将被加入到等待队列中
+
+**数据库连接池种类**
+
+1. JDBC的数据库连接池使用javax.sql.DataSource来表示，DataSource只是一个接口，该接口通常由第三方提供实现
+2. **C3P0**数据库连接池，速度相对较慢，稳定性不错（hibernate，spring）
+3. DBCP数据库连接池，速度相对c3p0较快，但不稳定
+4. Proxool数据库连接池，有监控连接池状态的功能，稳定性较c3p0差一点
+5. BoneCP数据库连接池，速度快
+6. **Druid**（德鲁伊）是阿里提供的数据库连接池，集DBCP，C3P0，Proxool优点于一身的数据库连接池
+
+845
