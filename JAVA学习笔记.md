@@ -5578,6 +5578,24 @@ JDBC程序中为了让多个SQL语句作为一个整体执行，需要使用**�
 
 在其中某个操作失败或出现异常是，调用Connection的rollback();方法回滚事务
 
+```java
+connection = JDBCUtils.getConnection(); // 得到mysql连接
+// 将connection设置为手动提交
+connection.setAutoCommit(false); //开启了事务
+try{
+    PreparedStatement ps = connection.preparedStatement(sql);
+    ps.executeUpdate(); //执行sql语句1
+    ps = connection.preparedStatement(sql2);
+    ps.executeUpdate(); //执行sql语句2
+    connection.commit();//提交事务
+}catch(SQLException e){
+    //发生异常，数据回滚
+    connection.rollback();
+}
+```
+
+
+
 ### 批处理
 
 当需要成批插入或者更新记录时，可以采用java的批量更新机制，这一机制允许多语句一次性提交给数据库处理。通常情况下比单独提交处理更有效率。
@@ -5593,6 +5611,29 @@ clearBatch()：清空批处理包的语句
 JDBC连接mysql时，如果要使用批处理功能柜，请在url中加参数？**rewriteBatchedSattement=true**
 
 批处理往往和PreparedStatement一起搭配使用，可以既减少编译次数，又减少运行次数，效率大大提高。
+
+```java
+// 批处理案例
+public void batch(){
+    Connection connection = JDBCUtils.getConnection();
+    String sql = "insert into admin values(null,?,?)";
+    PreparedStatement ps = connection.preparedStatement(sql);
+    for(int i =0;i<5000;i++){
+        ps.setString(1,"jack"+i);
+        ps.setString(2,"888");
+        //sql 语句加入到批处理包中
+        ps.addBatch();
+        //当有1000条记录时，执行一次批处理
+        if((i+1)%1000==0){
+            ps.executeBatch(); //执行批处理命令
+            ps.clearBatch(); //清空批处理命令，加入新的sql语句
+        }
+    }
+    JDBCUtils.close(null,ps,connection);
+}
+```
+
+
 
 ### 数据库连接池
 
@@ -5621,4 +5662,165 @@ JDBC连接mysql时，如果要使用批处理功能柜，请在url中加参数�
 5. BoneCP数据库连接池，速度快
 6. **Druid**（德鲁伊）是阿里提供的数据库连接池，集DBCP，C3P0，Proxool优点于一身的数据库连接池
 
-845
+```java
+//使用Druid升级JBDCUtils数据库连接工具
+package JDBCUtils;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+
+import javax.sql.DataSource;
+import java.io.FileInputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2025/12/8 10:05
+ * @description: 数据库连接池工具类，使用Druid连接池
+ */
+public class JDBCUtilsByDruid {
+    private static DataSource ds;
+    static {
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream("mysqlTest\\src\\druid.properties"));
+            ds = DruidDataSourceFactory.createDataSource(properties);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // 获取连接池对象
+    public static Connection getConnection() throws SQLException {
+        return ds.getConnection();
+    }
+
+    // 关闭连接池,在数据库连接池技术中，关闭连接并不是真正的断开了数据库的连接，
+    // 而是将连接对象回收至连接池，等待下一次使用。
+    public static void close(ResultSet rs, Statement st, Connection conn) {
+        try {
+            if(rs != null){
+               rs.close();
+            }
+            if(st != null){
+                st.close();
+            }
+            if (conn != null) {
+               conn.close();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+```
+
+### Apache-DBUtils
+
+commons-dbutils是apache组织提供的一个开源JDBC工具类库，它是对JDBC的封装，使用dbutils能极大简化jdbc编码的工作量。
+
+DbUtils类
+
+1. QueryRunner类：该类封装了SQL的执行，是线程安全的。可以实现增、删、改、查、批处理
+2. 使用QueryRunner类实现查询
+3. ResultSetHandler接口：该接口用于处理java.sql.ResultSet，将数据按要求转换成另一种形式。
+
+```java
+ArrayHandler: 把结果集中的第一行数据转成对象数组。
+ArrayListHandler：把结果集中的每一行数据都转成一个数组，再存放到List中。
+BeanHandler：将结果集中的第一行数据封装到一个对应的javaBean实例中。
+BeanListHandler：将结果集中的每一行数据封装到一个对应的javaBean实例中，存放到list里
+ColumnListHandler：将结果集中某一列的数据存放到list中
+KeyedHandler(name)：将结果集中的每行数据都封装到Map里，再把这些map存到一个map里，其key为指定的key。
+MapHandler：将结果集中的第一行数据封装到一个Map里，key是列名，value就是对应的值。
+MapListHandler：将结果集中的每一行数据都封装到一个map里，暗黑再存放到list
+```
+
+### BasicDAO
+
+DAO：data access Object 数据访问对象
+
+BasicDao是专门和数据库交互的，即完成对数据库（表）的crud操作，在basicdao的基础上，实现一张表对应一个dao，更好的完成功能，比如:Customer表--Customer.java类（javabean）--CustomerDao.java
+
+```java
+import JDBCUtils.JDBCUtilsByDruid;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2025/12/8 15:20
+ * 开发BasicDao，是其他Dao的父类，使用apache-dbutils工具类
+ */
+public class BasicDao<T> {
+    // <T> 表示泛型,可以代表任意类型
+    private QueryRunner qr = new QueryRunner();
+
+    // DML操作（增删改）
+    public int update(String sql, Object... params) {
+        Connection connection = null;
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            int row = qr.update(connection, sql, params);
+            return row;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilsByDruid.close(null, null, connection);
+        }
+    }
+
+    // 返回多行结果集（查询）
+    public List<T> queryMulti(String sql, Class<T> clazz, Object... params) {
+        Connection connection = null;
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            return qr.query(connection, sql, new BeanListHandler<T>(clazz), params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilsByDruid.close(null, null, connection);
+        }
+    }
+
+    // 返回单行结果集（查询）
+    public T querySingle(String sql, Class<T> clazz, Object... params) {
+        Connection connection = null;
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            return qr.query(connection, sql, new BeanHandler<T>(clazz), params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilsByDruid.close(null, null, connection);
+        }
+    }
+
+    // 返回单列结果集（查询）
+    public Object queryScalar(String sql, Object... params) {
+        Connection connection = null;
+        try {
+            connection = JDBCUtilsByDruid.getConnection();
+            return qr.query(connection, sql, new ScalarHandler<>(), params);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }finally {
+            JDBCUtilsByDruid.close(null, null, connection);
+        }
+    }
+}
+
+```
+
+860
