@@ -5823,11 +5823,126 @@ public class BasicDao<T> {
 
 ```
 
-### Mybatis
+## Mybatis
 
 MyBatis 是一款优秀的持久层框架，它支持自定义 SQL、存储过程以及高级映射。MyBatis 免除了几乎所有的 JDBC 代码以及设置参数和获取结果集的工作。MyBatis 可以通过简单的 XML 或注解来配置和映射原始类型、接口和 Java **POJO**（Plain Old Java Objects，普通老式 Java 对象）为数据库中的记录。
 
-详细文档查阅：https://mybatis.p2hp.com/getting-started.html
+JDBC查询数据库的缺点：1.硬编码 （注册驱动，获取链接，sql语句）2.操作繁琐（设置sql语句参数，手动封装结构集）
+
+### Mapper代理开发
+
+目的：解决原生方式中的硬编码，简化后期执行sql
+
+mapper代理方式的规则：
+
+1. 定义与sql映射文件同名的Mapper接口，并将Mapper接口和SQL映射文件放置在同一目录下
+2. 设置sql映射文件的namespace属性为Mapper接口全限定名
+3. 在Mapper接口中定义方法，方法名就是sql映射文件中sql语句的id，并保持参数类型和返回值类型一致
+4. 查询代码变成mapper代理（1.通过SqlSession的getMapper方法获取Mapper接口的代理对象 2. 调用对应方法完成sql的执行）
+
+细节：如果Mapper接口名称和SQL映射文件名称相同，并在同一目录下，则可以使用包扫描的方式简化Sql映射文件的加载。
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--环境配置-->
+    <environments default="development">
+        <!--开发环境配置，可以配置多个数据库，通过修改default属性来切换数据库-->
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--                数据库连接信息-->
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/myyunmengfayuan?useSSL=false&amp;serverTimezone=Asia/Shanghai"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+<!--正常方式加载sql映射文件-->
+<!--        <mapper resource="net/dpwl/mapper/UserMapper.xml"/>-->
+<!--        mapper代理方法，可以使用包扫描，来简化配置，自动加载包路径下所有的sql映射文件-->
+            <package name="net.dpwl.mapper"/>
+    </mappers>
+</configuration>
+```
+
+
+
+### MyBatis核心配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+<!--        为net.dpwl.pojo包下的所有类设置别名，别名就是类名，不区分大小写,这样mapper映射文件的返回类型就可以简化了-->
+        <package name="net.dpwl.pojo"/>
+    </typeAliases>
+    <environments default="development">
+<!--开发环境配置，可以配置多个数据库，通过修改default属性来切换数据库-->
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+<!--                数据库连接信息-->
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/myyunmengfayuan?useSSL=false&amp;serverTimezone=Asia/Shanghai"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+            </dataSource>
+        </environment>
+        <environment id="test">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/myyunmengfayuan?useSSL=false&amp;serverTimezone=Asia/Shanghai"/>
+                <property name="username" value="root"/>
+                <property name="password" value="H3u94c94kod0UjGuNmkfmqw0JMJRMF"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <mappers>
+<!--        加载sql映射文件-->
+<!--        <mapper resource="net/dpwl/mapper/UserMapper.xml"/>-->
+<!--        mapper代理方法，可以使用包扫描，来简化配置，自动加载包路径下所有的sql映射文件-->
+            <package name="net.dpwl.mapper"/>
+    </mappers>
+</configuration>
+```
+
+
+
+细节：配置各个标签是，需要遵守前后顺序，顺序如下：
+
+- configuration（配置）
+  - [properties（属性）](https://mybatis.p2hp.com/configuration.html#properties)
+  - [settings（设置）](https://mybatis.p2hp.com/configuration.html#settings)
+  - [typeAliases（类型别名）](https://mybatis.p2hp.com/configuration.html#typeAliases)
+  - [typeHandlers（类型处理器）](https://mybatis.p2hp.com/configuration.html#typeHandlers)
+  - [objectFactory（对象工厂）](https://mybatis.p2hp.com/configuration.html#objectFactory)
+  - [plugins（插件）](https://mybatis.p2hp.com/configuration.html#plugins)
+  - environments（环境配置）
+    - environment（环境变量）
+      - transactionManager（事务管理器）
+      - dataSource（数据源）
+  - [databaseIdProvider（数据库厂商标识）](https://mybatis.p2hp.com/configuration.html#databaseIdProvider)
+  - [mappers（映射器）](https://mybatis.p2hp.com/configuration.html#mappers)
+
+### 配置文件完成增删改查
+
+### 注解完成增删改查
+
+### 动态SQL
+
+
+
+
 
 ## 正则表达式
 

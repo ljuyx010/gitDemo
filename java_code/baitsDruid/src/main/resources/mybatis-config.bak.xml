@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="db.properties"/>
+
+    <typeAliases>
+        <package name="net.dpwl"/>
+    </typeAliases>
+
+    <environments default="development">
+        <environment id="development">
+            <!-- 使用JDBC事务管理 -->
+            <transactionManager type="JDBC"/>
+            <!-- 数据源将由Java代码设置 -->
+            <dataSource type="UNPOOLED">
+                <!-- 留空 -->
+            </dataSource>
+        </environment>
+    </environments>
+
+    <mappers>
+        <mapper resource="net/dpwl/UserMapper.xml"/>
+    </mappers>
+</configuration>
