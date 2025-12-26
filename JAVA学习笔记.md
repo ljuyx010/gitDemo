@@ -5936,13 +5936,169 @@ mapper代理方式的规则：
 
 ### 配置文件完成增删改查
 
+mybatisX插件，可以快速完成xml和pojo类的对应和跳转。
+
+mybatis完成增删改查的步骤：
+
+1.编写Mapper接口方法：Mapper接口 参数：id  返回结果集：User
+2.编写SQL语句：XML配置文件中 SQL映射
+3.执行方法，测试
+
+数据库表的字段名称和实体类的属性名称不一样，则不能自动封装数据需要手动处理，方法有两种：
+
+1. 查询数据库字段起别名，别名和实体类的属性一致（缺点：每次查询都要定义一次别名,可以使用sql片段处理）
+2. resultMap映射（定义resultMap标签，在<select>标签中，用resultMap替换resultType）
+
+```xml
+<!--定义sql片段，sql片段可以在查询中直接引用，避免相同内容重复写-->
+<sql id="user_column">
+    id，brand_name as brandName,company_name as companyName,carid,state
+</sql>
+<!--resultMap映射-->
+<resultMap id="userResultMap" type="user">
+<!--id是映射的唯一标识，type是和那个实体类映射-->
+    <id column="id" property="userid"></id><!--id是主键字段映射column是数据库字段，property是实体类属性-->
+    <result column="company_name" property="companyName"></result><!--resultMap是普通字段映射column是数据库字段，property是实体类属性-->
+</resultMap>
+<!--如果使用resultMap映射需要把reslutType改成resultMap其值为resultMap的id-->
+<select id="selectAll" resultType="user">
+    select
+    <include refid="user_column" /> <!--引入片段-->
+    from dp_user;
+</select>
+<select id="selectByid" parameterType="int" resultType="user">
+    select
+    <include refid="user_column" /> <!--引入片段-->
+    from dp_user where id = #{id};
+</select>
+
+```
+
+mybatis的xml中参数占位符：
+
+1. #{}：会将其替换成？，为了防止sql注入
+2. ${}：直接拼sql，会存在sql注入
+
+两个占位符的使用时机，1.当用户传入的参数时一律使用#{},2.当我们需要动态查询不同的table或字段时，可以使用${}来动态拼接sql
+
+参数类型：parameterType：可以省略
+
+特殊字符处理：l例如：< 是xml的标签开始标记所以在sql语句中直接使用小于号`<`是会报错的。解决办法：
+
+1. 转义字符：`<`使用对应的转码字符`&lt;`
+2. CDATA区: 把特殊字符用`<![CDATA[ < ]]`括起来使用
+
+多条件查询参数传递
+
+1. 散装参数：如果方法中有多个参数，需要使用@param("SQL参数占位符名称")
+
+   ```java
+   //UserMapper.java
+   interface UserMapper {
+   	List<User> selectAllUserByCondition(@Param("yz")int yz,@Param("name")String name,@Param("sex")int sex);  
+       //@param()中的名称要和mapper.xml中的参数名称一一对应，即把int yz变量的值传入到xml中和@param对应的变量名
+   }
+   ```
+
+   
+
+2. 对象参数：对象的属性名称要和sql参数占位符一致
+
+   ```java
+   //UserMapper.java
+   interface UserMapper {
+   	List<User> selectByCondition(User user);
+       // 传入一个User对象，user对象的属性和sql条件的名称一致
+   }
+   User user = new User();
+   user.setYz(yz);
+   user.setName(name);
+   user.setSex(sex);
+   List<User> list = userMapper.selectByCondition(user);
+   ```
+
+   
+
+3. map集合参数：map的键名和sql参数占位符名称一致
+
+   ```java
+   //UserMapper.java
+   interface UserMapper {
+   	List<User> selectByCondition(Map map);
+       // 传入一个Map集合，map中的键和sql条件的名称一致
+   }
+   Map map = new HashMap();
+   map.put("yz",yz);
+   map.put("name",name);
+   map.put("sex",sex);
+   List<User> list = userMapper.selectByCondition(map);
+   ```
+
+   
+
 ### 注解完成增删改查
+
+
 
 ### 动态SQL
 
+多条件查询时如何随着用户的输入或外部条件的变化而变化，我们称为动态SQL。
 
+Mybaits对动态sql有很强大的支撑：
 
+- if
 
+  ```xml
+  <where>
+      <!--if标签，test内写入逻辑表达式-->
+      <if test="yz != null">
+          yz = #{yz}
+      </if>
+      <!--xml中多添加不能用&&符号，只能用and 或者 or -->
+      <if test="name != null and name ！= ‘’ ">
+          and name = '%' #{name} '%'
+      </if>
+  </where>
+  ```
+
+  存在的问题，当第一个条件的逻辑运算为false时，第一个条件就不存在了，后面的条件就多出了一个and。
+
+  解决方法： 
+
+  1. 使用恒等式让所有条件格式都一样
+  1. 使用<where>标签替换SQl语句中的where关键字，包住所有的<if>标签
+
+- choose（when，otherwise）
+  单条件的动态查询
+
+  ```xml
+  <select id="findActiveBlogLike" resultType="Blog">
+    SELECT * FROM BLOG WHERE 
+    <choose><!--相当于switch-->
+      <when test="title != null">
+         title like #{title}
+      </when>
+      <when test="author != null and author.name != null">
+         author_name like #{author.name}
+      </when>
+      <otherwise> <!--相当于default，当其他的条件都不成立时，这个条件生效，防止sql语句where后无条件，也可以不要这个标签，把sql中的where关键字换成<where>标签包裹住<choose>标签-->
+        1 = 1
+      </otherwise>
+    </choose>
+  </select>
+  ```
+
+  
+
+- trim（where，set）
+
+- foreach
+
+当添加,修改，删除数据库时，`SqlSession sqlSession = sqlSessionFactory.openSession();`默认jdbc是开启事务的，所以需要手动提交事务`sqlSession.commit();`或直接设置事务自动提交`SqlSession sqlSession = sqlSessionFactory.openSession(true); //设置自动提交`
+
+11
+
+参考文档：https://mybatis.p2hp.com/dynamic-sql.html
 
 ## 正则表达式
 

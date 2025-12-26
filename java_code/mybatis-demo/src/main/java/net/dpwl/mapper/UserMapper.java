@@ -1,6 +1,10 @@
 package net.dpwl.mapper;
 
 import net.dpwl.pojo.User;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author 混江龙
@@ -14,4 +18,9 @@ public interface UserMapper {
          * @return 用户对象
          */
         User selectUser(Integer id);
+
+        User selectUserByName(String name);
+        List<User> selectAllUserByCondition(@Param("yz")int yz,@Param("name")String name,@Param("sex")int sex);
+        List<User> selectByCondition(User user);
+        List<User> selectByCondition(Map map);
 }
