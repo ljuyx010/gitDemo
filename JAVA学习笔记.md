@@ -6038,6 +6038,20 @@ mybatis的xml中参数占位符：
 
 ### 注解完成增删改查
 
+使用注解开发会比配置文件开发更加方便
+
+```java
+@Select("select * from dp_user where id = #{id}")
+public User selectById(int id);
+```
+
+- 查询注解：@Select
+- 添加注解：@Insert
+- 修改注解：@Update
+- 删除注解：@Delete
+
+提示：注解完成简单功能，配置文件完成复杂功能
+
 
 
 ### 动态SQL
@@ -6091,14 +6105,193 @@ Mybaits对动态sql有很强大的支撑：
   
 
 - trim（where，set）
+  set可以对update语句进行动态查询
+
+  ```xml
+  <update id="updateUser" parameterType="User">
+      update dp_user
+      <set>
+          <if test="nickname !=null and nickname !=''">
+              nickname=#{nickname},
+          </if>
+          <if test="sex !=null ">
+              sex=#{sex},
+          </if>
+          <if test="headimg !=null and headimg !=''">
+              headimg=#{headimg},
+          </if>
+          <if test="name !=null and name !=''">
+              name=#{name},
+          </if>
+          <if test="tel !=null and tel !=''">
+              tel=#{tel},
+          </if>
+          <if test="adr !=null and adr !=''">
+              adr=#{adr}
+          </if>
+      </set>
+      where
+      id=#{id}
+  </update>
+  ```
+
+  
 
 - foreach
 
+  ```xml
+  <!--
+      mybatis会将数组参数，封装成一个Map集合
+      *默认：array = 数组
+      * 使用@param注解改变map集合的默认key的名称
+      separator 分隔符
+  	open 循环开始前拼接的字符串
+  	close 循环结束后拼接的字符串
+      -->
+  <delete id="deleteByIds">
+      delete form dp_user where id in 
+      <foreach collection="ids" item="id" separator="," open="(" close=")">
+          #{id}
+      </foreach>
+      ;
+  </delete>
+  ```
+
+  
+
 当添加,修改，删除数据库时，`SqlSession sqlSession = sqlSessionFactory.openSession();`默认jdbc是开启事务的，所以需要手动提交事务`sqlSession.commit();`或直接设置事务自动提交`SqlSession sqlSession = sqlSessionFactory.openSession(true); //设置自动提交`
 
-11
+```xml
+在insert语句中设置useGeneratedKeys=“true” 和 keyProperty=“主键名”可以获取添加后的主键返回
+<insert id="addUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+insert into dp_user (openid,nickname, sex, headimg, name, tel,adr,logintime,yz) values (#{openid}, #{nickname}, #{sex}, #{headimg}, #{name},#{tel},#{adr},#{logintime},#{yz})
+</insert>
+```
 
 参考文档：https://mybatis.p2hp.com/dynamic-sql.html
+
+### MyBatis参数传递
+
+myBatis参数封装：
+
+- 单个参数：
+
+  1. Pojo类型：直接使用，属性名 和 参数占位符名称 一致
+
+  2. Map集合：直接使用，键名 和 参数占位符名称 一致
+
+  3. Collection：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+     map.put("arg0",Collection集合);
+     map.put("collection",Collection集合);
+
+  4. List：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+
+     map.put("arg0",List集合);
+     map.put("collection",List集合);
+     map.put("list",List集合);
+
+  5. Array：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+     map.put("arg0",数组);
+     map.put("array",数组);
+
+  6. 其他类型：比如int，String 直接使用
+
+- 多个参数：封装为Map集合，可以使用@Param注解，替换Map集合中默认的arg键名
+
+  默认参数：
+
+  map.put("arg0",参数值1);
+
+  map.put("Param1",参数值1);
+
+  map.put("arg1",参数值2);
+
+  map.put("Param2",参数值2);
+
+## Mybaits-Plus
+
+使用MybaitsPlus的基本步骤：
+
+1. 引入mybatisPlus依赖，代替Mybaits依赖
+
+```xml
+<!--mybatis-plus依赖-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus</artifactId>
+    <version>3.5.15</version>
+</dependency>
+```
+
+2. 定义Mapper接口并继承BaseMapper
+
+   ```java
+   public interface UserMapper extends BaseMapper<User> {}
+   ```
+
+### 常见注解
+
+MybaitsPlus通过扫描实体类，并基于反射获取实体类信息作为数据库表信息。约定通过命名获取对应的表信息。
+
+- 类名驼峰转下划线作为表名：比如User对应的表就是user，UserInfo对应的是user_info表
+- 名为id的字段作为主键
+- 变量名驼峰转下划线作为表的字段名
+
+如果命名和表信息不对应，就需要用下面的注解指定：
+
+- @TableName：用来指定表名
+
+- @TableId：用来指定表中的主键字段信息
+
+  ```java
+  @TableName("tb_user")
+  public class User{
+      // @TableId(value="id",type=IdType.AUTO) IdType枚举：AUTO（数据库自增长），INPUT（通过set方法自行输入），ASSIGN_ID（分配id，接口identifierGenerator的方法nextid来生成id，默认实现类为DefaultIdentifierGenerator雪花算法）
+      @TableId("id")
+      private int carid;
+      @TableField("username")  // 成员变量名和数据库字段名不一致需要注解
+      private String name;
+      @TableField("is_married")  // 成员变量名以is开头，并且是布尔值的默认会去掉is即married，所以也需要注解
+      private Boolean isMarried;
+      @TableField("`order`")  // 成员变量名和数据库关键字冲突也需要注解
+      private Integer order;
+      @TableField(exist=false) //成员变量名在数据库中不存在该字段需要用注解排除
+      private String address；
+  }
+  ```
+
+- @TableField：用来指定表中的普通字段信息
+
+### 常见配置
+
+MybaitsPlus的配置项继承了Mybaits原生配置和一些自己特有的配置，在application.yml中根据需要添加配置。如下
+
+![QQ20251230-165244](.\img\QQ20251230-165244.png)
+
+### 条件构造器
+
+使用wrapper构造查询条件，不需要使用mapper.xml配置简化操作
+
+```java
+public class TestUserMapper {
+    @Test
+    void testQueryWrapper(){
+        // 1.构建查询条件
+        QueryWrapper<User> wrapper = new QueryWrapper<User>()
+            .select("id","name","info","balance")
+            .like("name","o")
+            .ge("blance",1000);
+        // 2.查询
+        List<User> users = userMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+    
+}
+```
+
+05 11:30
+
+
 
 ## 正则表达式
 

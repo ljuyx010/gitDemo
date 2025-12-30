@@ -4,10 +4,12 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--命名空间-->
 <mapper namespace="net.dpwl.mapper.UserMapper"><!--namespace属性为Mapper接口全限定名-->
-    <resultMap id="userResultMap" type="user">
-        <id column="" property=""></id>
-        <result column="" property=""></result>
-    </resultMap>
+<!--    <resultMap id="userResultMap" type="user">-->
+<!--        <id column="id" property="id"></id>-->
+<!--        <result column="nickname" property="nickname"></result>-->
+<!--    </resultMap>-->
+
+
     <select id="selectUser" resultType="User">
         select * from dp_user where id = #{id}
     </select>
@@ -20,4 +22,47 @@
     <select id="selectByCondition" resultType="net.dpwl.pojo.User">
 
     </select>
+<!--    在insert语句中设置useGeneratedKeys=“true” 和 keyProperty=“主键名”可以获取添加后的主键值-->
+    <insert id="addUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        insert into dp_user (openid,nickname, sex, headimg, name, tel,adr,logintime,yz)
+        values (#{openid}, #{nickname}, #{sex}, #{headimg}, #{name},#{tel},#{adr},#{logintime},#{yz})
+    </insert>
+
+    <update id="updateUser" parameterType="User">
+        update dp_user
+        <set>
+            <if test="nickname !=null and nickname !=''">
+                nickname=#{nickname},
+            </if>
+            <if test="sex !=null ">
+                sex=#{sex},
+            </if>
+            <if test="headimg !=null and headimg !=''">
+                headimg=#{headimg},
+            </if>
+            <if test="name !=null and name !=''">
+                name=#{name},
+            </if>
+            <if test="tel !=null and tel !=''">
+                tel=#{tel},
+            </if>
+            <if test="adr !=null and adr !=''">
+                adr=#{adr}
+            </if>
+        </set>
+        where
+            id=#{id}
+    </update>
+    <!--
+    mybatis会将数组参数，封装成一个Map集合
+    *默认：array = 数组
+    * 使用@param注解改变map集合的默认key的名称
+    separator 分隔符
+    -->
+    <delete id="deleteByIds">
+        delete form dp_user where id in
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </delete>
 </mapper>

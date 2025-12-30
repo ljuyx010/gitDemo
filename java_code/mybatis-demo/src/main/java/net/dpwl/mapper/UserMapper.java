@@ -1,5 +1,6 @@
 package net.dpwl.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import net.dpwl.pojo.User;
 import org.apache.ibatis.annotations.Param;
 
@@ -11,7 +12,7 @@ import java.util.Map;
  * @version 1.0
  * @time 2025/12/24 16:51
  */
-public interface UserMapper {
+public interface UserMapper extends BaseMapper<User> {
         /**
          * 根据id查询用户
          * @param id 用户id
@@ -23,4 +24,7 @@ public interface UserMapper {
         List<User> selectAllUserByCondition(@Param("yz")int yz,@Param("name")String name,@Param("sex")int sex);
         List<User> selectByCondition(User user);
         List<User> selectByCondition(Map map);
+        void addUser(User user);
+        int updateUser(User user);
+        void deleteByIds(@Param("ids") Integer[] ids);
 }
