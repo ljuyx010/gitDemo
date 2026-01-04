@@ -6285,11 +6285,94 @@ public class TestUserMapper {
         List<User> users = userMapper.selectList(wrapper);
         users.forEach(System.out::println);
     }
+    // 使用lambda语法,可以解决硬编码问题
+    @Test
+    void testLambdaQueryWrapper(){
+        // 1.构建查询条件
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
+            .select(User::getId,User::getName,User::getInfo,User::getBalance)
+            .like(User::getName,"o")
+            .ge(User::getBlance,1000);
+        // 2.查询
+        List<User> users = userMapper.selectList(wrapper);
+        users.forEach(System.out::println);
+    }
+    @Test
+    void testUpdateByQueryWrapper(){
+        // 1.要更新的数据
+        User user =new User();
+        user.setBalance(2000);
+        // 2.更新的条件
+        QueryWrapper<User> wrapper = new QueryWrapper<User>("username","jack");
+        // 3.执行更新
+        userMapper.update(user,wrapper);
+    }
+    @Test
+    void testUpdateWrapper(){
+        List<int> ids = List.of(1,2,4);
+        // 1.更新的条件
+        UpdateWrapper<User> wrapper = new UpdateWrapper<User>().setSql("balance = balance - 200").in("id",ids);
+        // 2.执行更新
+        userMapper.update(null,wrapper);
+    }
     
 }
 ```
 
-05 11:30
+条件构造器的用法：
+
+- QueryWrapper和LambdaQueryWrapper通常用来构建select，delete，update的where条件部分
+- UpdateWrapper和LambdaUpdateWrapper通常只有在set语句比较特殊才实用
+- 尽量使用LambdaQueryWrapper和LambdaUpdateWrapper，避免硬编码
+
+### 自定义SQL
+
+我们可以利用MybaitsPlus的Wrapper来构建复制的where条件，软化自己定义sql语句中剩下的部分。
+
+1. 基于wrapper构建where条件
+
+   ```java
+   List<int> ids = List.of(1,2,4);
+   int amount = 200;
+   // 1.构造条件
+   LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>().in(User::getId,ids);
+   // 2.自定义sql方法调用
+   userMapper.updateBalanceByIds(wrapper,amount);
+   ```
+
+   
+
+2. 在mapper方法参数中用Param注解声明wrapper变量名称，必须是ew
+
+   ```java
+   void updateBalanceByIds(@Param("ew") LambdaQueryWrapper<User> wrapper,@Param("amount") int amout); 
+   ```
+
+3. 自定义sql，并使用wrapper条件
+
+   ```xml
+   <update id="updateBalanceByIds">
+   	UPDATA dp_user SET balance = balance - #{amount} ${ew.customSqlsegment}
+   </update>
+   ```
+
+### Service接口
+
+mp的service接口使用流程：
+
+1. 自定义Service接口继承IService接口
+
+   ```java
+   public interface UserService extends IService<User> {}
+   ```
+
+2. 自定义Service实现类，实现自定义接口并继承ServiceImpl类
+
+   ```java
+   public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {}
+   ```
+
+   9
 
 
 

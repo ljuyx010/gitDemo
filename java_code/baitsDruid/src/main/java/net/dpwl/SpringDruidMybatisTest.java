@@ -3,7 +3,7 @@ package net.dpwl;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-public class SpringApp {
+public class SpringDruidMybatisTest {
     public static void main(String[] args) {
         try {
             // 加载Spring配置文件
