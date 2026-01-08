@@ -13,7 +13,7 @@ spring:
     # Druid连接池配置
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/myyunmengfayuan?useSSL=false&serverTimezone=Asia/Shanghai
+      url: jdbc:mysql://localhost:3306/myyunmengfayuan?useSSL=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true #rewriteBatchedStatements=true 设置mysql开启批处理
       username: root
       password: H3u94c94kod0UjGuNmkfmqw0JMJRMF
       # 初始化大小
@@ -76,5 +76,33 @@ mybatis-plus:
 # 日志配置
 logging:
   level:
-    net.dpwl.webapi.mapper: debug
+    net.dpwl.webapi: debug
     com.alibaba.druid: info
+
+# springdoc-openapi项目配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: net.dpwl.webapi.controller
+# knife4j的增强配置，不需要增强可以不配
+knife4j:
+  enable: true
+  openapi:
+    title: "DPWL Web API"
+    version: 1.0.0
+    description: "DPWL Web API 接口文档"
+    group:
+      default:
+        group-name: "默认"
+        api-rule: package
+        api-rule-resources:
+          - net.dpwl.webapi.controller
+  setting:
+    language: zh_cn

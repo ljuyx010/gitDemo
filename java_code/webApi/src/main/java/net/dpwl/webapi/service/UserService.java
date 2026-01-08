@@ -1,7 +1,12 @@
 package net.dpwl.webapi.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import net.dpwl.webapi.dto.PageDTO;
 import net.dpwl.webapi.entity.User;
+import net.dpwl.webapi.query.UserQuery;
+import net.dpwl.webapi.vo.UserVO;
+
+import java.util.List;
 
 /**
  * @author 混江龙
@@ -15,4 +20,8 @@ public interface UserService extends IService<User> {
      * @return 用户信息
      */
     User getUserById(int id);
+
+    List<User> queryUsers(String nickname, Integer sex, Integer yz, String tel);
+
+    PageDTO<UserVO> queryUsersPage(UserQuery query);
 }

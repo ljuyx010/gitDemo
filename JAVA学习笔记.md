@@ -1,3 +1,5 @@
+
+
 # JAVA学习笔记
 
 ##   java介绍
@@ -6372,7 +6374,349 @@ mp的service接口使用流程：
    public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {}
    ```
 
-   9
+   案例，使用lambda语法查询用户判断余额并扣除余额，如果余额扣完则更改用户状态
+   
+   ```java
+   @Override
+   @Transactional  //事务注解
+   public void deductBalance(Integer id,Integer money){
+       // 1. 查询用户
+       User user = getById(id);
+       // 2. 校验用户状态
+       if(user == null || user.getStatus() == 2){
+           throw new RuntimeException("用户状态异常");
+       }
+       // 3. 校验用户余额
+       if(user.getBalance() < money){
+           throw new RuntimeException("用户余额不足！");
+       }
+       // 4. 扣除余额 update tb_user set balance = balance -?
+       int remainBalance = user.getBalance - money;
+       lambdaUpdate().set(User::getBalance,remainBalance).set(remainBalance == 0, User::getStatus,2).eq(User::getId,id).eq(User::getBalance,user.getBalance()) //乐观锁，判断当前余额和查询的余额是否相等，不相等就不修改
+           .update(); //前面是构建sql语句，update才是执行，所以不能缺省
+   }
+   ```
+
+IService批量新增
+
+批量for循环插入10万条大概需要4分钟
+
+IService的批量插入 基于预编译的批处理，性能不错  减少大量网络请求大概需要20秒
+
+开启mysql连接参数`rewriteBatchedStatements=true`，mysql批处理 （插入语句拼接成一条语句） 大概需要6秒
+
+### MP的扩展功能
+
+1. mybatispulus插件可以根据数据库信息自动生成表对应的实体类，service，Controller等通用的内容，减少工作量
+
+2. 静态工具：当需要查询多个表时，按照传统的service注入的方式，很容易出现service相互调用的问题，此时就可以使用静态工具`Db`,避免循环依赖。
+
+   ```java
+   public void queryUserAndArticleByIds(List<Integer> ids) {
+       // 1.查询用户 使用Service接口的listByIds方法
+           List<User> user = listByIds(ids);
+           if (CollUtil.isEmpty(users)) {
+               //throw new RuntimeException("用户不存在");
+               return Collections.emptylist();
+           }
+        // 2.查询文章
+       // 2.1获取用户id集合(通过流，搜集User::getId转成list)
+       List<Integer> userIds = users.stream().map(User::getId).collect(Collectors.tolist());
+           // 2.2查询相关的文章 使用Db静态方法不需要注入 Article的service依赖
+           List<Article> articles = Db.lambdaQuery(Article.class).in(Article::getUid, userIds).list();
+       // 2.3 转换文章vo
+       List<ArticleVO> articleVOList = BeanUtil.copyToList(articles,ArticleVO.class);
+       Map<Integer,List<ArticleVO>> articleMap = new HashMap<>();
+       // 健壮性处理，判断articleVOList非空才能转vo，否则会报错
+       if(CollUtil.isNotEmpty(articleVOList)){
+       //2.4 梳理文章集合（分组），分类整理，相同用户的文章放入一个集合（组）中
+       articleMap = articleVOList.stream().collect(Collectors.groupingBy(ArticleVO::getUid));
+           }
+       // 3.转vo返回
+       List<UserVO> list = new ArrayList<>(users.size());
+       for(User user: users){
+           // 3.1转换user的po为vo
+           UserVO vo = BeanUtil.copyProperties(user,UserVO.class);
+           list.add(vo);
+           // 3.2转换articleVO
+           vo.setArticle(articleMap.get(user.getId()));
+       }
+       return list;
+       }
+   ```
+
+3. 逻辑删除
+   逻辑删除就是基于代码逻辑模拟删除效果，但不会真正的删除数据。思路如下：
+
+   - 在表中添加一个字段标记数据是否被删除
+   - 当删除数据时把标记设置为1
+   - 查询时只查询标记为0的数据
+
+MybaitsPlus提供了逻辑删除功能，无效改变方法调用的方式，而是在底层帮我们自动修改crud的语句。我们要做的的就是在application.yaml文件中配置逻辑删除的字段名称和值即可。
+
+```yaml
+mybatis-plus:
+	global-config:
+		db-config:
+			logic-delete-field:del # 全局逻辑删除的实体字段名，字段类型可以是boolean，integer
+			logic-delete-value:1 # 逻辑已删除值（默认为 1）
+			logic-not-delete-value:0 # 逻辑未删除值（默认为0）
+```
+
+逻辑删除的问题: 1. 会导致数据库表垃圾数据越来越多，影响查询效率 2. SQl中全都需要对逻辑删除字段做判断，影响查询效率。因此，我们不太推挤采用逻辑删除功能，如果数据不能删除，可以采用把数据迁移到其他表的办法。
+
+4. 枚举处理器
+   mp枚举处理器使用步骤：1. 创建枚举类 2.设置mybatisplus配置 3.实体类中的数据类型就可以替换成枚举对象了
+
+   ```java
+   // 创建用户状态的枚举
+   @Getter
+   public enum UserStatus{
+      NORMAL(1,"正常"),
+       FREEZE(2,"冻结");
+       
+       @EnumValue // 该注解标注枚举中那个字段对应数据库存储的值
+       private final int value;
+       @JsonValue // 该注解标注枚举类型的数据在前端返回时返回数据项
+       private final String desc;
+       
+       UserStatus(int value,String desc){
+           this.value = value;
+           this.desc = desc;
+       }
+   }
+   ```
+
+   ```yaml
+   mybatis-plus:
+   	configuration:
+   		default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler # 设置枚举处理器
+   ```
+
+   ```java
+   public class User{
+       // private int status; 原本int类型的实体属性 就可以换成枚举对象的了
+       private UserStatus status;
+       // 在后续的service中字段的赋值和比较都可以使用UserStatus.NORMAL 枚举即可。
+   }
+   ```
+
+5. JSON处理器
+   JSON处理器使用：
+
+   ```java
+   // 1.创建json数据对应的实体
+   @Data
+   @noArgsConstructor
+   @AllArgsConstructor(staticName="of")
+   public class UserInfo{
+       private Integer age;
+       private String intro;
+       private String gender;
+   }
+   
+   // 2.改造User实体类
+   @Data
+   @TableName(value = "dp_user", autoResultMap = true) // 4.设置自动映射开启
+   public class User{
+       // private String info; 原本String类型存放json字符串的实体属性 就可以换成对应的json数据实体了
+       // 3.注解开启json处理器
+       @TableField(typeHandler=JacksonTypeHandler.class)
+       private UserInfo info;
+   }
+   ```
+
+### 插件功能
+
+分页插件
+
+```xml
+<!--mybatis plus 3.5.15版本里 Pagination分页拦截器插件被放到这个包里了-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-jsqlparser</artifactId>
+    <version>3.5.12</version>
+</dependency>
+```
+
+```java
+// 1.配置Mybaits plus拦截器
+package net.dpwl.webapi.config;
+
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/6 14:13
+ */
+@Configuration
+public class MybatisPlusConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        // 1.初始化核心插件
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        // 2.添加分页插件
+        PaginationInnerInterceptor pageInterceptor = new PaginationInnerInterceptor(DbType.MYSQL);
+        pageInterceptor.setMaxLimit(1000L); //设置分页上限
+        // 把分页插件拦截器添加到核心插件
+        interceptor.addInnerInterceptor(pageInterceptor);
+        return interceptor;
+    }
+}
+
+// 2.创建page对象，并查询
+@Test
+void testPageQuery(){
+    // 1.前端传递分页参数
+    int pageNo = 1,pageSize = 5;
+    // page对象，并设置分页参数
+    Page<User> page = Page.of(pageNo,pageSize);
+    // 排序参数，通过OrderItem来指定，可以设置多个排序
+    page.addOrder(new OrderItem("balance",false)); //false 降序
+    page.addOrder(new OrderItem("id",true)); // balance 相等时，按照id升级排
+    // 分页查询
+    Page<User> p = userService.page(page);
+    // 总条数
+    System.out.println("total= "+p.getTotal());
+    // 总页数
+    System.out.println("pages= "+p.getPages());
+    // 分页数据
+    List<User> records = p.getRecords();
+}
+```
+
+通用分页实体
+
+```java
+// 把前端传递的分页数据抽象成一个类
+package net.dpwl.webapi.query;
+
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import net.dpwl.webapi.entity.User;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/6 16:24
+ */
+@Data
+@Schema(description = "分页查询参数实体")
+public class PageQuery {
+    @Schema(description = "当前页码")
+    private Integer pageNum = 1;
+
+    @Schema(description = "每页数量")
+    private Integer pageSize = 10;
+
+    @Schema(description = "排序字段")
+    private String sortField = "id"; // 默认按id排序
+
+    @Schema(description = "是否升序排序")
+    private Boolean isAsc = true;
+
+    public <T> Page<T> toMpPage() {
+        Page<T> page = Page.of(pageNum, pageSize);
+        // 1.2 排序条件（使用静态工厂方法替代直接new）
+        if (isAsc) {
+            page.addOrder(OrderItem.asc(sortField));
+        } else {
+            page.addOrder(OrderItem.desc(sortField));
+        }
+        return page;
+    }
+}
+
+// 把po转vo的部分也抽象成一个DTO类
+package net.dpwl.webapi.dto;
+
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import net.dpwl.webapi.vo.UserVO;
+
+import java.util.List;
+import java.util.function.Function;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/6 16:30
+ */
+@Data
+@Schema(description = "分页查询结果实体")
+public class PageDTO<T> {
+    @Schema(description = "总页码")
+    private Long pages;
+
+    @Schema(description = "总记录数")
+    private Long total;
+
+    @Schema(description = "分页数据")
+    private List<T> list;
+
+    public static <PO,VO> PageDTO<VO> of(Page<PO> p, Class<VO> clazz){
+        PageDTO<VO> pageDTO = new PageDTO<>();
+        pageDTO.setPages(p.getPages());
+        pageDTO.setTotal(p.getTotal());
+        List<PO> records = p.getRecords();
+        if(CollUtil.isEmpty(records)){
+            // 判断分页时间是否为空
+            pageDTO.setList(List.of());
+            return pageDTO;
+        }
+        pageDTO.setList(BeanUtil.copyToList(records, clazz));
+        return pageDTO;
+    }
+    // 使用函数式接口转换分页数据
+    public static <PO,VO> PageDTO<VO> of(Page<PO> p, Function<PO,VO> convertor){
+        PageDTO<VO> pageDTO = new PageDTO<>();
+        pageDTO.setPages(p.getPages());
+        pageDTO.setTotal(p.getTotal());
+        List<PO> records = p.getRecords();
+        if(CollUtil.isEmpty(records)){
+            // 判断分页时间是否为空
+            pageDTO.setList(List.of());
+            return pageDTO;
+        }
+        pageDTO.setList(records.stream().map(convertor).toList());
+        return pageDTO;
+    }
+}
+
+// 经过抽象分类后的user Service实现
+@Override
+    public PageDTO<UserVO> queryUsersPage(UserQuery query) {
+        // 1. 构建分页条件
+        // 1.1 分页条件 
+        Page<User> page = query.toMpPage(); //直接调用抽象出来的方法不用所有分页页面都写一遍提高复用性
+        // 2. 分页查询
+        Page<User> p = lambdaQuery().ge(User::getYz, query.getYz())
+                .like(query.getNickname() != null, User::getNickname, query.getNickname())
+                .eq(query.getSex() != null, User::getSex, query.getSex())
+                .like(query.getTel() != null, User::getTel, query.getTel())
+                .page(page);
+
+        // 4. 返回分页结果
+        return pageDTO.of(p, UserVO.class);  //使用转vo的抽象类，只需传入数据和需要转成的vo类的class类对象，即可返回正常的vo对象，如果vo还需要进一步改造的可以使用羡慕的方法。
+        // 使用函数式接口转换分页数据
+        return pageDTO.of(p, user -> {
+            UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+            // 可以做特殊处理，比如只显示名字的部分
+            userVO.setName(userVO.getName().substring(0, 1) + "**");
+            return userVO;
+        });
+    }
+```
 
 
 
