@@ -7049,3 +7049,191 @@ String[] split = str.split("#|-|~|\\d+");
 优化思路：
 
 我们优先选择走下个位置的下个位置可走点位比较少的点，这样的话，即使走不通回溯的步数也比较少，这样就可以大大减少循环的次数。
+
+## Spring
+
+IoC，DI和AOP思想
+
+IoC思想：Inversion Of  Control 控制反转，强调的是原来在程序中创建Bean(对象)的权利反转给第三方。
+
+DI思想：Dependency Injection 依赖注入，强调的Bean之间关系，这种关系第三方负责去设置。
+
+AOP思想：Aspect Oriented Programming 面向切面编程，功能的横向抽取，注意的实现方式就是Proxy
+
+框架的基本特点：
+
+- 框架(Framework)，是基于基础技术之上，从众多业务中抽取出的通用解决方案；
+- 框架是一个半成品，使用框架规定的语法开发可以提高开发效率，可以用简单的代码就能完成复杂的基础业务;
+- 框架内部使用大量的设计模式、算法、底层代码操作技术，如反射、内省、xml解析、注解解析等；
+- 框架一般都具备扩展性；
+- 有了框架，我们可以将精力尽可能的投入在纯业务开发上而不用去费心技术实现以及一些辅助业务。
+
+### BeanFactory
+
+BeanFactory的开发步骤：
+
+1. 导入Spring的jar包或Maven坐标；
+2. 定义UserService接口及其UserServicelmpl实现类；
+3. 创建beans.xml配置文件，将UserServicelmpl的信息配置到该xml中；
+4. 编写测试代码，创建BeanFactory，加载配置文件，获取UserService实例对象。
+
+```java
+public static void main(String[] args){
+    // 1.创建bean工厂
+    DefaultListableBeanFactory beanFactory= new DefaultListableBeanFactory();
+    // 2.为bean工厂创建xml读取器
+    XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+    // 3. 读取beans.xml配置文件
+    reader.loadBeanDefinitions(location:"beans.xml");
+    // 4. beanFactory 创建了一个UserService的bean
+    UserService userService = (UserService) beanFactory.getBean(name:"userService");
+   
+}
+```
+
+上面使用BeanFactory完成了loC思想的实现，下面去实现以下DI依赖注入：
+
+1. 定义UserDao接口及其UserDaolmpl实现类；
+2. 修改UserServicelmpl代码，添加一个setUserDao(UserDaouserDao)用于接收注入的对象；
+3. 修改beans.xml配置文件，在UserDaolmpl的<bean>中嵌入<property>配置注入;
+4. 修改测试代码，获得UserService时，setUserService方法执行了注入操作。
+
+```xml
+<beans>
+    <!--配置UserServiceImpl-->
+    <bean id="userService" class="com.itheima.service.impl.UserServiceImpl">
+        <!--在UserServiceImpl中创建setUserDao方法，通过此方法可以生成一个userDao的bean，这就提现了DI的思想，property是bean的属性，name就是set方法去掉set后的名字，ref就是要注入的bean的id，此处就是设置依赖注入-->
+    	<property name="userDao" ref="userDao"></property>
+    </bean>
+    <!--配置UserDaoImpl-->
+    <bean id="userDao"
+    class="com.itheima.dao.impl.UserDaoImpl"></bean>
+</beans>
+```
+
+### ApplicationContext
+
+ApplicationContext（引用上下文）快速入门
+ApplicationContext 称为Spring容器，内部封装了BeanFactory,比BeanFactory功能更丰富更强大,使用ApplicationContext进行开发时，xml配置文件的名称习惯写成ApplicationContext.xml
+
+```java
+public static void main(String[] args){
+    //创建ApplicationContext，加载配置文件，实例化容器
+	ApplicationContext applicationContext =
+new ClassPathxmlApplicationContext（“beans.xml");
+    //根据beanName获得容器中的Bean实例
+    UserService userService = (UserService) applicationContext.getBean("userService"):
+    System.out.println(userService);
+}
+```
+
+BeanFactory与ApplicationContext的关系：
+
+1. BeanFactory是Spring的早期接口，称为Spring的Bean工厂，ApplicationContext是后期更高级接口，称之为Spring 容器;
+2. ApplicationContext在BeanFactory基础上对功能进行了扩展，例如：监听功能、国际化功能等。BeanFactory的API更偏向底层，ApplicationContext的API大多数是对这些底层API的封装；
+3. Bean创建的主要逻辑和功能都被封装在BeanFactory中，ApplicationContext不仅继承了BeanFactory，而且ApplicationContext内部还维护着BeanFactory的引|用，所以,ApplicationContext与BeanFactory既有继承关系，又有融合关系。
+4. Bean的初始化时机不同，原始BeanFactory是在首次调用getBean时才进行Bean的创建（延迟加载），而ApplicationContext则是配置文件加载，容器一创建就将Bean都实例化并初始化好（立即创建）。
+
+只在Spring基础环境下，常用的三个ApplicationContext作用如下：
+
+| 实现类                             | 功能描述                                   |
+| ---------------------------------- | ------------------------------------------ |
+| ClassPathXmlApplicationContext     | 加载类路径下的xm配置的ApplicationContext   |
+| FileSystemXmlApplicationContext    | 加载磁盘路径下的xm配置的ApplicationContext |
+| AnnotationConfigApplicationContext | 加载注解配置类的ApplicationContext         |
+
+### springBean的配置
+
+| XML配置方式                              | 功能柜描述                                                   |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| <bean id="" class="“>                    | Bean的id和全限定名配置，id在容器中会转成bean Name            |
+| <bean name="”>                           | 通过name设置Bean的别名，通过别名也能直接获取到Bean实例       |
+| <bean scope="“>                          | Bean的作用范围，BeanFactory作为容器时取值singleton和prototype |
+| <bean lazy-init="">                      | Bean的实例化时机，是否延迟加载。BeanFactory作为容器时无效    |
+| <bean init-method="”>                    | Bean实例化后自动执行的初始化方法，method指定方法名           |
+| <bean destroy-method="">                 | Bean实例销毁前的方法，method指定方法名                       |
+| <bean autowire="byType">                 | 设置自动注入模式，常用的有按照类型byType，按照名字byName     |
+| <bean factory-bean=" factory-method=""/> | 指定哪个工厂Bean的哪个方法完成Bean的创建                     |
+
+**Bean的范围配置**
+默认情况下，单纯的Spring环境Bean的作用范围有两个：Singleton和Prototype
+singleton：单例，默认值，Spring容器创建的时候，就会进行Bean的实例化，并存储到容器内部的单例池中，每次getBean时都是从单例池中获取相同的Bean实例；
+prototype:原型,Spring容器初始化时不会创建Bean实例,当调用getBean时才会实例化Bean,每次getBean都会创建一个新的Bean实例并不会再放入单例池中。
+
+**Spring的实例化方式主要如下两种：**
+● 构造方式实例化：底层通过构造方法对Bean进行实例化
+● 工厂方式实例化：底层通过调用自定义的工厂方法对Bean进行实例化（可以在创建bean之前或之后做一些其他业务逻辑处理）
+
+```xml
+<!--静态方法的工厂方式实例化-->
+<bean id="userDao1" class="net.dpwl.factory.MyBeanFactory1" factory-method="userDao">
+	<!--如果构造bean需要参数可以使用Constructor-arg-->
+    <constructor-arg name="参数名" value="参数值" ></constructor-arg>
+</bean>
+
+<!--非静态方法的工厂方式实例化 ：1.先创建非静态方法的实例化bean-->
+<bean id="myBeanFactory2" class="net.dpwl.factory.MyBeanFactory2" ></bean>
+<!--2. 使用创建好的ben去实例化方法-->
+<bean id="userDao2" factory-bean="myBeanFactory2" factory-method="userDao"></bean>
+```
+
+**Bean的依赖注入有两种方式：**
+
+| 注入方式                   | 配置方式                                                     |
+| -------------------------- | ------------------------------------------------------------ |
+| 通过Bean的set方法注入      | <property name="userDao" ref="userDao"/><br /><property name="userDao" ref="userDao"/> |
+| 通过构造Bean的方法进行注入 | <constructor-arg name="name" ref="userDao"/><br /><constructor-arg name="name" value="haohao"/> |
+
+其中，ref是reference的缩写形式，翻译为：涉及，参考的意思，用于引用其他Bean的id。value用于注入普通属性值。
+
+**依赖注入的数据类型有如下三种：**
+
+- 普通数据类型，例如：String、int、boolean等，通过value属性指定。
+- 引l用数据类型，例如:UserDaolmpl、DataSource等，通过ref属性指定。
+- 集合数据类型，例如:List、Map、Properties等。
+
+```xml
+<!--注入list集合-->
+<bean id="userService"
+class="com.itheima.service.impl.UserServiceImpl">
+    <property name="stringList">
+        <list>
+            <value>aaa</value>
+            <value>bbb</value>
+            <value>ccc</value>
+        </list>
+    </property>
+</bean>
+```
+
+**扩展：自动装配方式**
+如果被注入的属性类型是Bean引l用的话，那么可以在<bean>标签中使用autowire属性去配置自动注入方式，属性值有两个：
+byName:通过属性名自动装配,即去匹配 setXxx与id="xxx”(name="xxx”)是否一致;
+byType:通过Bean的类型从容器中匹配，匹配出多个相同Bean类型时，报错。
+`<bean id="userService" 
+class="com.itheima.service.impl.UserServiceImpl"
+autowire="byType"></bean>`
+
+**Spring的其他配置标签**
+Spring的xml标签大体上分为两类，一种是默认标签，一种是自定义标签
+默认标签：就是不用额外导入其他命名空间约束的标签，例如<bean>标签
+Spring的默认标签用到的是Spring的默认命名空间,该命名空间约束下的默认标签如下：
+
+| 标签     | 作用                                                         |
+| -------- | ------------------------------------------------------------ |
+| <beans>  | 般作为xml配置根标签，其他标签都是该标签的子标签，profile="dev"可以区别不同的环境使用不同的配置，程序中使用System.setProperty("spring.profiles.active","dev");指定激活的环境 |
+| <bean>   | Bean的配置标签，上面已经详解了，此处不再阐述                 |
+| <import> | 外部资源导入标签                                             |
+| <alias>  | 指定Bean的别名标签，使用较少                                 |
+
+自定义标签：就是需要额外引入其他命名空间约束，并通过前缀引l用的标签，例如`<context:property-placeholder/>`标签
+
+### spring的get方法
+
+| 方法定义                                | 返回值和参数                                                 |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Object getBean (String beanName)        | 根据beanName从容器中获取Bean实例，要求容器中Bean唯一，返回值为Object，需要强转 |
+| T getBean (Class type)                  | 根据Class类型从容器中获取Bean实例，要求容器中Bean类型唯一，返回值为Class类型实例，无需强转 |
+| T getBean (String beanName, Class type) | 根据beanName从容器中获得Bean实例，返回值为Class类型实例，无需强转 |
+
+31
