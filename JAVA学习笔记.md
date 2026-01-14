@@ -7164,6 +7164,24 @@ prototype:原型,Spring容器初始化时不会创建Bean实例,当调用getBean
 ● 构造方式实例化：底层通过构造方法对Bean进行实例化
 ● 工厂方式实例化：底层通过调用自定义的工厂方法对Bean进行实例化（可以在创建bean之前或之后做一些其他业务逻辑处理）
 
+```java
+// 静态工厂方法
+public class MyBeanFactory1{
+    public static UserDao userDao(){
+        //Bean创建之前可以进行一些其他业务逻辑操作
+        return new UserDaoImpl();
+    }
+}
+
+// 实例工厂方法
+public class MyBeanFactory2{
+    public UserDao userDao(){
+        //Bean创建之前可以进行一些其他业务逻辑操作
+        return new UserDaoImpl();
+    }
+}
+```
+
 ```xml
 <!--静态方法的工厂方式实例化-->
 <bean id="userDao1" class="net.dpwl.factory.MyBeanFactory1" factory-method="userDao">
@@ -7236,4 +7254,216 @@ Spring的默认标签用到的是Spring的默认命名空间,该命名空间约�
 | T getBean (Class type)                  | 根据Class类型从容器中获取Bean实例，要求容器中Bean类型唯一，返回值为Class类型实例，无需强转 |
 | T getBean (String beanName, Class type) | 根据beanName从容器中获得Bean实例，返回值为Class类型实例，无需强转 |
 
-31
+### spring配置非自定义Bean
+
+以上在xml中配置的Bean都是自己定义的，例如：UserDaolmpl,UserServicelmpl。但是，在实际开发中有些功能类并不是我们自己定义的，而是使用的第三方jar包中的，那么，这些Bean要想让Spring进行管理，也需要对其进行配置
+
+配置非自定义的Bean需要考虑如下两个问题：
+
+- 被配置的Bean的实例化方式是什么？无参构造、有参构造、静态工厂方式还是实例工厂方式；
+- 被配置的Bean是否需要注入必要属性。
+
+```xml
+<!——静态工厂方法方式-->
+<bean id="in" class="org.apache.ibatis.io.Resources" factory-method="getResourceAsStream">
+	<constructor-arg name="resource" value="mybatis-config.xml"></constructor-arg>
+</bean>
+<!——无参构造实例化-->
+<bean id="builder" class="org.apache.ibatis.session.SqlSessionFactoryBuilder"></bean>
+<!——实例工厂方法-->
+<bean id="sqlSessionFactory" factory-bean="builder" factory-method-"build">
+	<constructor-arg name="inputstream" ref="in"></constructor-arg>
+</bean>
+```
+
+
+
+### Bean实例化的基本流程
+
+Spring容器在进行初始化时，会将xml配置的<bean>的信息封装成一个BeanDefinition(Bean定义)对象，所有的BeanDefinition存储到一个名为beanDefinitionMap的Map集合中去，Spring框架在对该Map进行遍历，使用反射创建Bean实例对象，创建好的Bean对象存储在一个名为singletonObjects(单例池)的Map集合中，当调用getBean方法时则最终从该Map集合中取出Bean实例对象返回。
+
+Bean实例化的基本流程：
+
+- 加载xml配置文件，解析获取配置中的每个<bean>的信息，封装成一个个的BeanDefinition对象；
+- 将BeanDefinition存储在一个名为beanDefinitionMap的Map<String,BeanDefinition>中;
+- ApplicationContext底层遍历beanDefinitionMap,创建Bean实例对象；
+- 创建好的Bean实例对象，被存储到一个名为singletonObjects的Map<String,Object>中;
+- 当执行applicationContext.getBean(beanName)时,从singletonObjects去匹配Bean实例返回。
+
+![QQ20260114-100900](.\img\QQ20260114-100900.png)
+
+### Spring后处理器
+
+Spring的后处理器是Spring对外开发的重要扩展点，允许我们介入到Bean的整个实例化流程中来，以达到动态注册BeanDefinition,动态修改BeanDefinition,以及动态修改Bean的作用。Spring主要有两种后处理器：
+
+- BeanFactoryPostProcessor：Bean工厂后处理器,在BeanDefinitionMap填充完毕,Bean实例化之前执行；
+- BeanPostProcessor：Bean后处理器,一般在Bean实例化之后，填充到单例池singletonObjects之前执行。
+
+Bean工厂后处理器-BeanFactoryPostProcessor
+BeanFactoryPostProcessor是一个接口规范，实现了该接口的类只要交由Spring容器管理的话，那么Spring就会回调该接口的方法，用于对BeanDefinition注册和修改的功能。
+
+```java
+//xml 配置Bean工厂后处理器的bean
+<bean class="net.dpwl.processor.MyBeanFactoryPostProcessor"></bean>
+
+//Bean工厂后处理器 测试
+public class MyBeanFactoryPostProcessor implements BeanFactoryPostProcessor{
+    @Override
+    public void
+postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throw Exception{
+        System.out.println（"beanDefinitionMap填充完毕后回调该方法");
+        // 1.修改某个beanDefinition
+      BeanDefinition beanDefinition=beanFactory.getBeanDefinition("userService");
+        beanDefinition.setBeanClassName("net.dpwl.dao.impl.UserDaoImpl");
+        // 2.注册beanDefinition
+        BeanDefinition beanDefinition=new RootBeanDefinition();
+        beanDefinition.setBeanClassName("net.dpwl.dao.impl.PersonDaoImpl");
+        // 2.2要把bean放入beanDefinitionMap需要强转成DefaultListableBeanFactory
+        DefaultListableBeanFactory dbf=(DefaultListableBeanFactory) beanFactory;
+        dbf.registerBeanDefinition("personDao",beanDefinition);
+    }
+}
+```
+
+Bean后处理器-BeanPostProcessor
+Bean被实例化后，到最终缓存到名为singletonObjects单例池之前，中间会经过Bean的初始化过程，例如：属性的填充、初始方法init的执行等，其中有一个对外进行扩展的点BeanPostProcessor，我们称为Bean后处理。跟上面的Bean工厂后处理器相似，它也是一个接口，实现了该接口并被容器管理的BeanPostProcessor，会在流程节点上被Spring自动调用。
+
+```java
+package net.dpwl.webapi.processor;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Date;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/14 15:02
+ */
+public class LogTimeBeanPostProcessor implements BeanPostProcessor {
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        return BeanPostProcessor.super.postProcessBeforeInitialization(bean, beanName);
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        // 使用动态代理对目标Bean进行增强，返回proxy对象，进而存储到单例池singleObjects中
+        Object beanProxy = Proxy.newProxyInstance(
+                bean.getClass().getClassLoader(),
+                bean.getClass().getInterfaces(),
+                (proxy, method, args) -> {
+                    // 1.输出开始时间
+                    System.out.println("方法：" + method.getName() + "-开始时间：" + new Date());
+                    // 2.执行目标方法
+                    Object result = method.invoke(bean, args);
+                    // 3.输出结束时间
+                    System.out.println("方法：" + method.getName() + "-结束时间：" + new Date());
+                    return result;
+                }
+        );
+        return BeanPostProcessor.super.postProcessAfterInitialization(beanProxy, beanName);
+    }
+}
+```
+
+![QQ20260114-151926](.\img\QQ20260114-151926.png)
+
+### Spring Bean的生命周期
+
+SpringBean的生命周期是从Bean实例化之后，即通过反射创建出对象之后，到Bean成为一个完整对象，最终存储到单例池中，这个过程被称为SpringBean的生命周期。SpringBean的生命周期大体上分为三个阶段：
+
+- Bean的实例化阶段：Spring框架会取出BeanDefinition的信息进行判断当前Bean的范围是否是singleton的，是否不是延迟加载的，是否不是FactoryBean等，最终将一个普通的singleton的Bean通过反射进行实例化；
+
+- Bean的初始化阶段：Bean创建之后还仅仅是个”半成品”，还需要对Bean实例的属性进行填充、执行一些Aware接口方法、执行BeanPostProcessor方法、执行InitializingBean接口的初始化方法、执行自定义初始化init方法等。该阶段是Spring最具技术含量和复杂度的阶段，Aop增强功能，后面要学习的Spring的注解功能等、spring高频面试题Bean的循环引用问题都是在这个阶段体现的；
+
+  Spring Bean的初始化过程涉及如下几个过程：
+
+  - Bean实例的属性填充
+
+    spring在进行属性注入时，会分为如下几种情况：
+    注入普通属性，String、int或存储基本类型的集合时，直接通过set方法的反射设置进去；
+    注入单向对象引用属性时，从容器中getBean获取后通过set方法反射设置进去，如果容器中没有，则先创建被注入对象Bean实例（完成整个生命周期）后，在进行注入操作；
+    注入双向对象引用属性时，就比较复杂了，涉及了循环引用（循环依赖）问题，下面会详细阐述解决方案。Spring提供了三级缓存存储完整Bean实例和半成品Bean实例，用于解决循环引用问题
+    在DefaultListableBeanFactory的上四级父类DefaultSingletonBeanRegistry中提供如下三个Map：
+
+    ```java
+    public class DefaultSingletonBeanRegistry...{
+        //1、最终存储单例Bean成品的容器，即实例化和初始化都完成的Bean,称之为"一级缓存"
+        Map<String, Object> singletonObjects = new ConcurrentHashMap(256);
+        //2、早期Bean单例池，缓存半成品对象，且当前对象已经被其他对象引用了，称之为”二级缓存"
+        Map<String, Object> earlySingletonObjects = new ConcurrentHashMap (16);
+        Q
+        //3、单例Bean的工厂池，缓存半成品对象，对象未被引用，使用时在通过工厂创建Bean，称之为"三级缓存"
+        Map<String, ObjectFactory<?>> singletonFactories = new HashMap(16);
+    }
+    ```
+
+    
+
+  - Aware接口属性注入
+
+    常用的Aware接口
+    Aware接口是一种框架辅助属性注入的一种思想，其他框架中也可以看到类似的接口。框架具备高度封装性，我们接触到的一般都是业务代码，一个底层功能API不能轻易的获取到，但是这不意味着永远用不到这些对象，如果用到了，就可以使用框架提供的类似Aware的接口，让框架给我们注入该对象。
+
+    | Aware接口               | 回调方法                                                     | 作用                                                    |
+    | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
+    | ServletContextAware     | setServletContext(ServletContext context)                    | Spring框架回调方法注入ServletContext对象web环境下才生效 |
+    | BeanFactoryAware        | setBeanFactory(BeanFactory factory)                          | Spring框架回调方法注入beanFactory对象                   |
+    | BeanNameAware           | setBeanName(String beanName)                                 | Spring框架回调方法注入当前Bean在容器中的beanName        |
+    | ApplicationContextAware | setApplicationContext(ApplicationContext applicationContext) | Spring框架回调方法注入applicationContext对象            |
+
+    
+
+  - BeanPostProcessor的before()方法回调
+
+  - InitializingBean接口的初始化方法回调
+
+  - 自定义初始化方法init回调
+
+  - BeanPostProcessor的after()方法回调
+
+- Bean的完成阶段：经过初始化阶段，Bean就成为了一个完整的SpringBean，被存储到单例池singletonObjects中去了，即完成了Spring Bean的整个生命周期。
+
+### Spring xml方式整合第三方框架
+
+xml整合第三方框架有两种整合方案：
+
+- 不需要自定义命名空间（只需使用Spring的xmlns和xsi），不需要使用Spring的配置文件配置第三方框架本身内容，例如：MyBatis；
+
+  ```xml
+  <!——配置数据源信息——>
+  <bean id="datasource"
+  class="com.alibaba.druid.pool.DruidDataSource">
+      <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
+      <property name="url"
+      value="jdbc:mysql://localhost:3306/mybatis"></property>
+      <property name="username"
+      value="root"></property>
+      <property name="password" value="root"></property>
+  </bean>
+  <!--配置sqlSessionFactoryBean,作用将sqlSessionFactory存储到spring容器-->
+  <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+  	<property name="dataSource" ref="dataSource"></property>
+  </bean>
+  <!--MapperScannerConfigurer，作用扫描指定的包，产生Mapper对象存储到spring容器-->
+  <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+  	<property name="basePackage" value="com.itheima.mapper"></property>
+  </bean>
+  ```
+
+  Spring整合MyBatis的原理剖析
+  整合包里提供了一个SqlSessionFactoryBean和一个扫描Mapper的配置对象，SqlSessionFactoryBean一旦被实例化，就开始扫描Mapper并通过动态代理产生Mapper的实现类存储到Spring容器中。相关的有如下四个类：
+  ● SqlSessionFactoryBean:需要进行配置,用于提供SqlSessionFactory;
+  ● MapperScannerConfigurer:需要进行配置，用于扫描指定mapper注册BeanDefinition;
+  ● MapperFactoryBean:Mapper的FactoryBean,获得指定Mapper时调用getObject方法；
+  ● ClassPathMapperScanner:definition.setAutowireMode(2)修改了自动注入状态,所以
+  MapperFactoryBean中的setSqlSessionFactory会自动注入进去。
+
+- 需要引入第三方框架命名空间（需要使用自己的xmlns和xsi），需要使用Spring的配置文件配置第三方框架本身内容，例如：Dubbo。
+
+60
