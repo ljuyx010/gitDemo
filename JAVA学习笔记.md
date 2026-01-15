@@ -7466,4 +7466,119 @@ xml整合第三方框架有两种整合方案：
 
 - 需要引入第三方框架命名空间（需要使用自己的xmlns和xsi），需要使用Spring的配置文件配置第三方框架本身内容，例如：Dubbo。
 
-60
+**spring xml方式整合第三方框架（自定义xml标签）**
+
+通过上述分析，我们清楚的了解了外部命名空间标签的执行流程，如下：
+
+- 将自定义标签的约束与物理约束文件与网络约束名称的约束以键值对形式存储到一个spring.schemas文件里，该文件存储在类加载路径的META-INF里，Spring会自动加载到；
+- 将自定义命名空间的名称与自定义命名空间的处理器映射关系以键值对形式存在到一个叫spring.handlers文件里，该文件存储在类加载路径的META-INF里，Spring会自动加载到；
+- 准备好NamespaceHandler，如果命名空间只有一个标签，那么直接在parse方法中进行解析即可，一般解析结果就是注册该标签对应的BeanDefinition。如果命名空间里有多个标签，那么可以在init方法中为每个标签都注册一个BeanDefinitionParser,在执行NamespaceHandler的parse方法时在分流给不同的BeanDefinitionParser进行解析（重写doParse方法即可）。
+
+### Bean基本注解开发
+
+Spring除了xml配置文件进行配置之外，还可以使用注解方式进行配置，注解方式慢慢成为xml配置的替代方案。我们有了xml开发的经验，学习注解开发就方便了许多，注解开发更加快捷方便。
+Spring提供的注解有三个版本：
+
+- 2.0时代，Spring开始出现注解
+- 2.5时代，Spring的Bean配置可以使用注解完成
+- 3.0时代，Spring其他配置也可以使用注解完成，我们进入全注解时代
+
+基本Bean注解，主要是使用注解的方式替代原有xml的<bean>标签及其标签属性的配置
+
+```xml
+<bean id="" name="" class="" scope="" lazy-init="" init-method="" destroy-method="" abstract="" autowire="" factory-bean="" factory-method=""></bean>
+```
+
+使用@Component注解替代`<bean>`标签
+@Component就单纯一个value属性，那么xml配置<bean>时那些属性怎么进行配置呢？Spring是通过注解方式去配置的之前<bean>标签中的那些属性，例如：@Scope
+
+| xml配置                    | 注解                 | 描述                                                         |
+| -------------------------- | -------------------- | ------------------------------------------------------------ |
+| `<bean id=" class=">`      | @Component(value="") | 被该注解标识的类，会在指定扫描范围内被spring加载并实例化     |
+| `<bean scope="">`          | @Scope               | 在类上或使用了@Bean标注的方法上，标注Bean的作用范围，取值为singleton或prototype |
+| `<bean lazy-init="">`      | @Lazy                | 在类上或使用了@Bean标注的方法上，标注Bean是否延迟加载，取值为true和false |
+| `<bean init-method="">`    | @PostConstruct       | 在方法上使用，标注Bean的实例化后执行的方法                   |
+| `<bean destroy-method="">` | @PreDestroy          | 在方法上使用，标注Bean的销毁前执行方法                       |
+
+使用注解模式，需要在xml中配置组件扫描的基本包
+
+```xml
+<!--注解组件扫描：扫描指定的基本包及其子包下的类，识别使用eComponent注解-->
+<context:component-scan base-package="net.dpwl"/>
+```
+
+如果Component不配置value则默认使用类的名称首字母小写作为bean的名称。
+
+由于JavaEE开发是分层的，为了每层Bean标识的注解语义化更加明确，@Component又行生出如下三个注解：
+
+| @Component衍生注解 | 描述                |
+| ------------------ | ------------------- |
+| @Repository        | 在Dao层类上使用     |
+| @Service           | 在Service层类上使用 |
+| @Controller        | 在Web层类上使用     |
+
+### Bean依赖注入开发
+
+Bean依赖注入的注解，主要是使用注解的方式替代xml的<property>标签完成属性的注入操作
+
+```xml 
+<bean id="" class="">
+    <property name="" value=""/>
+    <property name="" ref=""/>
+</bean>
+```
+
+Spring主要提供如下注解，用于在Bean内部进行属性注入的：
+
+| 属性注入注解 | 描述                                                   |
+| ------------ | ------------------------------------------------------ |
+| @Value       | 使用在字段或方法上，用于注入普通数据                   |
+| @Autowired   | 使用在字段或方法上，用于根据类型（byType）注入引用数据 |
+| @Qualifier   | 使用在字段或方法上，结合@Autowired，根据名称注入       |
+| @Resource    | 使用在字段或方法上，根据类型或名称进行注入             |
+
+@Autowired 根据类型进行注入，如果同一类型的Bean有多个，尝试根据名字进行二次匹配,匹配不成功再报错
+
+在方法或字段上@Qualifier结合@Autowired一起使用，作用是根据名称注入相应的Bean
+
+```java
+@Autowired
+@Qualifier("Bean名称")
+```
+
+@Resource  不指定名称参数时根据类型注入，指定名称（name=""）则根据名字注入。
+
+### 非自定义Bean注解开发
+
+非自定义Bean不能像自定义Bean一样使用@Component进行管理，非自定义Bean要通过工厂的方式进行实例化，使用@Bean标注方法即可，@Bean的属性为beanName，如不指定为当前工厂方法名称
+
+```java
+//将方法返回值Bean实例以@Bean注解指定的名称存储到spring容器中
+@Bean("dataSource")
+public DataSource dataSource(){
+    DruidDataSource dataSource = new DruidDataSource():
+    dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+    dataSource.setUrl("jdbc:mysql://1ocalhost:3306/mybatis");
+    dataSource.setUsername("root");
+    dataSource.setPassword("root"):
+    return dataSource;
+}    
+```
+
+PS:工厂方法所在类必须要被Spring管理
+
+@Bean不设置名字默认使用方法名作为名字
+
+@Bean注解在方法上，方法返回的bean，所有此方法必须是spring能扫描到的类，即该类要有@Component注解。
+
+@Bean注解的方法如果要注入一个其他的bean，默认可以直接自动注入，不用再写@Autowired，spring会根据类型自动注入。
+
+74
+
+
+
+
+
+
+
+
