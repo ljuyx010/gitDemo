@@ -7436,7 +7436,7 @@ xml整合第三方框架有两种整合方案：
 - 不需要自定义命名空间（只需使用Spring的xmlns和xsi），不需要使用Spring的配置文件配置第三方框架本身内容，例如：MyBatis；
 
   ```xml
-  <!——配置数据源信息——>
+  <!--配置数据源信息-->
   <bean id="datasource"
   class="com.alibaba.druid.pool.DruidDataSource">
       <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
@@ -7573,12 +7573,163 @@ PS:工厂方法所在类必须要被Spring管理
 
 @Bean注解的方法如果要注入一个其他的bean，默认可以直接自动注入，不用再写@Autowired，spring会根据类型自动注入。
 
-74
+### Bean的配置类的注解开发
 
+@Configuration  标注当前类是一个配置类（替代配置文件）+@Component
 
+@ComponentScan(base-package={"net.dpwl"})  注解组件扫描，base-package可以省略，如果只扫描一个软件包，{}也可以省略。
 
+@PropertySource("classpath:jdbc.properties")  注解资源文件，解析Properties文件后可以直接使用${key}获取配置的值。
 
+@Import()  注解代替`<import>`标签,加载其他配置类
 
+```java
+public static void main (String[] args){
+    //xml 方式的Spring容器
+	//ApplicationContext applicationContext = new ClassPathxmlApplicationContext（“beans.xml");
+    //注解方式去加载spring的核心配置类
+    ApplicationContext applicationContext = new AnnotationConfigApplicationContext(SpringConfig.class);
+}
 
+```
 
+### Spring配置其他注解
 
+扩展：@Primary注解用于标注相同类型的Bean优先被使用权，@Primary是Spring3.0引l入的，与@Component和@Bean一起使用，标注该Bean的优先级更高，则在通过类型获取Bean或通过@Autowired根据类型进行注入时，会选用优先级更高的
+
+```java
+@Repository("userDao")
+public class UserDaoImpl implements UserDao()
+
+@Repository("userDao2")
+@Primary
+public class UserDaoImpl2 implements UserDao()
+
+@Bean
+public UserDao userDaoO1(){return new UserDaoImpl();}
+
+@Bean
+@Primary
+public UserDao userDao02 (){return new UserDaoImpl2();}
+```
+
+扩展：@Profile注解的作用同于xml配置时学习profile属性，是进行环境切换使用的
+
+```xml
+<beans profile="test"></beans>
+```
+
+注解@Profile标注在类或方法上，标注当前产生的Bean从属于哪个环境，只有激活了当前环境，被标注的Bean才能被注册到Spring容器里，不指定环境的Bean，任何环境下都能注册到Spring容器里
+
+```java
+@Repository("userDao")
+@Profile("test")
+public class UserDaoImpl implements UserDao()
+    
+@Repository("userDao2")
+public class UserDaoImpl2 implements UserDao()
+```
+
+可以使用以下两种方式指定被激活的环境：
+使用命令行动态参数，虚拟机参数位置加载-Dspring.profiles.active=test
+使用代码的方式设置环境变量System.setProperty("spring.profiles.active","test”);
+
+![QQ20260116-152941](.\img\QQ20260116-152941.png)
+
+### Spring注解方式整合第三方框架
+
+第三方框架整合，依然使用MyBatis作为整合对象，之前我们已经使用xml方式整合了MyBatis，现在使用注解方式无非就是将xml标签替换为注解，将xml配置文件替换为配置类而已，原有xml方式整合配置如下
+
+```xml
+<!--xml方式整合mybaits-->
+<!--配置数据源信息-->
+<bean id="datasource"
+class="com.alibaba.druid.pool.DruidDataSource">
+    <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
+    <property name="url"
+    value="jdbc:mysql://localhost:3306/mybatis"></property>
+    <property name="username"
+    value="root"></property>
+    <property name="password" value="root"></property>
+</bean>
+<!--配置sqlSessionFactoryBean,作用将sqlSessionFactory存储到spring容器-->
+<bean class="org.mybatis.spring.SqlSessionFactoryBean">
+	<property name="dataSource" ref="dataSource"></property>
+</bean>
+<!--MapperScannerConfigurer，作用扫描指定的包，产生Mapper对象存储到spring容器-->
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	<property name="basePackage" value="com.itheima.mapper"></property>
+</bean>
+```
+
+```java
+// 注解方式整合mybatis
+@Configuration // 配置注解
+@PropertySource("classpath:jdbc.properties") //properties数据源注解
+@MapperScan("net.dpwl.mapper") //mybaits提供的注解，mapper接口扫描
+public class SpringConfig{
+    @Bean //非自定义Bean注解
+    public DataSource dataSource(
+    	@Value("${jdbc.driver}") String driver,
+        @Value("${jdbc.url}") String url,
+        @Value("${jdbc.username}") String username,
+        @Value("${jdbc.password}") String password,
+    ){
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUserName(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+    
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){ //dataSource会根据类型自动注入，不需要再写注解@Autowired
+        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+}
+```
+
+Spring与MyBatis注解方式整合有个重要的技术点就是@Import，第三方框架与Spring整合xml方式很多是凭借自定义标签完成的，而第三方框架与Spring整合注解方式很多是靠@Import注解完成的。
+@Import可以导入如下三种类：
+
+1. 普通的配置类
+2. 实现ImportSelector接口的类（实现ImportSelector接口的selectImports方法需要返回一个数组，数组封装的是需要被注册到spring容器中的bean的全限定名）
+3. 实现ImportBeanDefinitionRegistrar接口的类 （常用于总定义的框架和spring集成）
+
+### AOP的概念
+
+AOP，Aspect Oriented Programming，面向切面编程，是对面向对象编程OOP的升华。OOP是纵向对一个事物的抽象，一个对象包括静态的属性信息，包括动态的方法信息等。而AOP是横向的对不同事物的抽象，属性与属性、方法与方法、对象与对象都可以组成一个切面，而用这种思维去设计编程的方式叫做面向切面编程
+
+**AOP思想的实现方案**
+动态代理技术，在运行期间，对目标对象的方法进行增强，代理对象同名方法内可
+以执行原有逻辑的同时嵌入执行其他增强逻辑或其他对象的方法
+
+**AOP相关概念**
+
+| 概念      | 单词      | 解释                                             |
+| --------- | --------- | ------------------------------------------------ |
+| 目标对象  | Target    | 被增强的方法所在的对象                           |
+| 代理对象  | Proxy     | 对目标对象进行增强后的对象，客户端实际调用的对象 |
+| 连接点    | Joinpoint | 目标对象中可以被增强的方法                       |
+| 切入点    | Pointcut  | 目标对象中实际被增强的方法                       |
+| 通知\增强 | Advice    | 增强部分的代码逻辑                               |
+| 切面      | Aspect    | 增强和切入点的组合                               |
+| 织入      | Weaving   | 将通知和切入点组合动态组合的过程                 |
+
+### 基于xml配置的AOP
+
+xml方式配置AOP的步骤：
+1、导入AOP相关坐标；org.aspectj.aspectjweaver
+2、准备目标类、准备通知类，并配置给Spring管理；
+
+ 2.1、引入aop的命名空间：`xmlns:aop="http://www.springframework.org/schema/aop"`
+
+`http://www.springframework.org/aop/context http://www.springframework.org/schema/aop/spring-aop.xsd`
+
+3、配置切点表达式（哪些方法被增强）；
+4、配置织入（切点被哪些通知方法增强，是前置增强还是后置增强
+
+85
