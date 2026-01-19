@@ -7732,4 +7732,102 @@ xml方式配置AOP的步骤：
 3、配置切点表达式（哪些方法被增强）；
 4、配置织入（切点被哪些通知方法增强，是前置增强还是后置增强
 
-85
+```xml
+<!--aop配置-->
+<aop:config>
+	<!--配置切点表达式，目的是要指定那些方法被增强-->
+    <aop:pointcut id="myPointcut" expression="execution(void net.dpwl.service.impl.UserServiceImpl.show())" />
+    <aop:pointcut id="myPointcut1" expression="execution(void net.dpwl.service.impl.UserServiceImpl.show1())" />
+    <!--配置织入，目的是要执行那些切点与那些通知进行结合-->
+    <aop:aspect ref="myAdvice">
+        <!--引用外部的切点-->
+    	<aop:before method="beforeAdvice" pointcut-ref="myPointcut"/>
+        <!--切点直接配置在织入-->
+        <aop:before method="beforeAdvice" pointcut="execution(void net.dpwl.service.impl.UserServiceImpl.show1())"/>
+    </aop:aspect>
+</aop:config>
+```
+
+**xml方式AOP配置详解**
+xml配置AOP的方式还是比较简单的，下面看一下AOP详细配置的细节：
+
+1. 切点表达式的配置方式
+   可以把切点表达式配置在<aop:aspect>外部通过pointcut-ref引用，也可以直接用pointcut配置切点表达式。（如果一个切点需要配置多个通知，最优是配置在外然后引用）
+
+2. 切点表达式的配置语法
+   `execution（[访问修饰符]返回值类型 包名.类名.方法名（参数））`
+
+   访问修饰符可以省略不写；
+   返回值类型、某一级包名、类名、方法名可以使用*表示任意；
+   包名与类名之间使用单点.表示该包下的类，使用双点表示该包及其子包下的类；
+   参数列表可以使用两个点.表示任意参数。
+
+   ```java
+   //表示访问修饰符为public、无返回值、在com.itheima.aop包下的rargetImpl类的无参方法show
+   execution (public void com.itheima.aop.TargetImpl.show())
+   //表述com.itheima.aop包下的TargetImpl类的任意方法
+   execution(* com.itheima.aop.TargetImpl.*(..))
+   //表示com.itheima.aop包下的任意类的任意方法
+   execution(* com.itheima.aop.*.*(..))
+   //表示com.itheima.aop包及其子包下的任意类的任意方法
+   execution(* com.itheima.aop..*.*(..))
+   //表示任意包中的任意类的任意方法
+   execution(* *..*.*(..))
+   ```
+
+3. 通知的类型
+   AspectJ的通知由以下五种类型
+
+   | 通知名称 | 配置方法                | 执行时机                                                 |
+   | -------- | ----------------------- | -------------------------------------------------------- |
+   | 前置通知 | `<aop:before>`          | 目标方法执行之前执行                                     |
+   | 后置通知 | `<aop:after-returning>` | 目标方法执行之后执行，目标方法异常时，不在执行           |
+   | 环绕通知 | `<aop:around>`          | 目标方法执行前后执行，目标方法异常时，环绕后方法不在执行 |
+   | 异常通知 | `<aop:after-throwing>`  | 目标方法抛出异常时执行                                   |
+   | 最终通知 | `<aop:after>`           | 不管目标方法是否有异常，最终都会执行                     |
+
+   ```java
+   // 环绕增强通知方法
+   public Object around(ProceedingJoinPoint proceedingJoinPoint) throws Throwable{
+       System.out.println("环绕前的增强....”");
+       Object res=proceedingJoinPoint.proceed();//执行目标方法
+       System.out.println("环绕后的增强....");
+       return res;
+   }
+   ```
+
+4. AOP的配置的两种方式
+   使用<aspect>配置切面
+   使用<advisor>配置切面，需要在通知类实现advice的子接口，来确定是属于增强的类型
+
+```xml
+<!--使用advisor-->
+<aop:config>
+	<aop:pointcut id="myPointcut" expression="execution(void net.dpwl.service.impl.UserServiceImpl.show())" />
+	<!--myAdvice2类需要实现advice接口的子接口，确定增强类型-->
+    <aop:advisor advice-ref="myAdvice2" pointcut-ref="myPointcut" />
+</aop:config>
+```
+
+AOP配置的两种语法形式不同点
+语法形式不同：
+	advisor是通过实现接口来确认通知的类型
+	aspect是通过配置确认通知的类型，更加灵活
+可配置的切面数量不同：
+	一个advisor只能配置一个固定通知和一个切点表达式
+	一个aspect可以配置多个通知和多个切点表达式任意组合
+使用场景不同：
+	允许随意搭配情况下可以使用aspect进行配置
+	如果通知类型单一、切面单一的情况下可以使用advisor进行配置
+	在通知类型已经固定，不用人为指定通知类型时，可以使用advisor进行配置，例如后面要学习的Spring事务控制的配置
+
+动态代理的实现的选择，在调用getProxy0方法时，我们可选用的AopProxy接口有两个实现类，如上图，这两种都是动态生成代理对象的方式，一种就是基于JDK的，一种是基于Cglib的
+
+| 代理技术          | 使用条件                                                     | 配置方式                                                     |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| JDK动态代理技术   | 目标类有接口，是基于接口动态生成实现类的代理对象             | 目标类有接口的情况下，默认方式                               |
+| Cglib动态代理技术 | 目标类无接口且不能使用final修饰，是基于被代理对象动态生成子对象为代理对象 | 目标类无接口时，默认使用该方式；目标类有接口时，手动配置<aop:config proxy-target-class=“true”>强制使用Cglib方式 |
+
+### 基于注解配置的AOP
+
+91
