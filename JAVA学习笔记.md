@@ -7830,4 +7830,468 @@ AOP配置的两种语法形式不同点
 
 ### 基于注解配置的AOP
 
-91
+Spring的AOP也提供了注解方式配置，使用相应的注解替代之前的xml配置，xml配置AOP时，我们主要配置了三部分：目标类被Spring容器管理、通知类被Spring管理、通知与切点的织入（切面），如下：
+
+ ```java
+ //增强类，内部提供增强方法
+ @Component
+ @Aspect  // aop注解
+ public class MyAdvice {
+ 	//<aop:before method="beforeAdvice" pointcut="execution(* com.itheima.service.impl.*.*(..)" />
+     @Before("execution(* com.itheima.service.impl.*.*(..))") //增强类型注解
+     public void beforeAdvice(JoinPoint joinPoint){
+ 		//System.out.printIn("当前目标对象是:"+joinPoint.getTarget());
+     	//System.out.printIn("表达式:"+joinPoint.getStaticPart());
+    		System.out.println("前置的增强....");
+     } 
+ }
+ ```
+
+```xml
+<!--组件扫描-->
+<context:component-scan base-package="com.itheima" />
+
+<!--spring的xml配置文件中要配置aop自动代理，注解才能生效-->
+<aop:aspectj-autoproxy />
+```
+
+![QQ20260120-115955](.\img\QQ20260120-115955.png)
+
+各种注解方式通知类型
+
+```java
+// 前置通知
+@Before("execution(* com.itheima.service.impl.*.*(..))")
+public void before(JoinPoint joinPoint){}
+//后置通知
+@AfterReturning("execution(* com.itheima.service.impl.*.*(..))")
+public void AfterReturning(JoinPoint joinPoint){}
+//环绕通知
+@Around("execution(* com.itheima.service.impl.*.*(..))")
+public void around(ProcceedingJoinPoint joinPoint) throws Throwable{}
+//异常通知
+@AfterThrowing(pointcut="execution(* com.itheima.service.impl.*.*(..))",throwing="e")
+public void AfterThrowing(Throwable e){}
+//最终通知
+@After("execution(* com.itheima.service.impl.*.*(..))")
+public void After(JoinPoint joinPoint){}
+
+// 切点表达式可以抽取出来
+@Pointcut("execution(* com.itheima.service.impl.*.*(..))")
+public void myPointcut(){}
+// 通知引用切点表达式
+@Before("MyAdvice.myPointcut()")
+public void before(JoinPoint joinPoint){}
+```
+
+**配置类替代配置文件**
+
+```java
+package net.dpwl.config;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+@Configuration
+@ComponentScan("net.dpwl") //<context:component-scan base-package="net.dpwl" />
+@EnableAspectJAutoProxy //<aop:aspectj-autoproxy />
+public class SpringConfig{
+    
+}
+// 入口类,使用配置类的方式获取bean
+package net.dpwl;
+public class ApplicationContext{
+    public static void main(String[] args){
+        ApplicationContext app = new AnnotationConfigApplicationContext(SpringConfig.class);
+        UserService bean = app.getBean(UserService.class);
+        bean.show();
+    }
+}
+```
+
+之前在使用xml配置AOP时，是借助的Spring的外部命名空间的加载方式完成的，使用注解配置后，就抛弃了`<aop:config>`标签，而该标签最终加载了名为AspectJAwareAdvisorAutoProxyCreator的BeanPostProcesor，
+最终，在该BeanPostProcessor中完成了代理对象的生成。
+同样，从aspectj-autoproxy标签的解析器入手
+
+```java
+this.registerBeanDefinitionParser("aspectj-autoproxy",new
+AspectJAutoProxyBeanDefinitionParser());
+```
+
+![QQ20260120-142949](.\img\QQ20260120-142949.png)
+
+### 基于AOP的声明式事务控制
+
+Spring事务编程概述
+事务是开发中必不可少的东西，使用JDBC开发时，我们使用connnection对事务进行控制，使用MyBatis时，我们使用SqlSession对事务进行控制，缺点显而易见，当我们切换数据库访问技术时，事务控制的方式总会变化，Spring就将这些技术基础上，提供了统一的控制事务的接口。Spring的事务分为：编程式事务控制和声明式事务控制
+
+| 事务控制方式   | 解释                                                         |
+| -------------- | ------------------------------------------------------------ |
+| 编程式事务控制 | Spring提供了事务控制的类和方法，使用编码的方式对业务代码进行事务控制，事务控制代码和业务操作代码合到了一起，开发中不使用 |
+| 声明式事务控制 | Spring将事务控制的代码封装，对外提供了xml和注解配置方式，通过配置的方式完成事务的控制，可以达到事务控制与业务操作代码解耦合，开发中推荐使用 |
+
+Spring事务编程相关的类主要有如下三个
+
+| 事务控制相关类                           | 解释                                                         |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| 平台事务管理器PlatformTransactionManager | 是一个接口标准，实现类都具备事务提交、回滚和获得事务对象的功能，不同持久层框架可能会有不同实现方案 |
+| 事务定义TransactionDefinition            | 封装事务的隔离级别、传播行为、过期时间等属性信息             |
+| 事务状态TransactionStatus                | 存储当前事务的状态信息，如果事务是否提交、是否回滚、是否有回滚点等 |
+
+虽然编程式事务控制我们不学习，但是编程式事务控制对应的这些类我们需要了解一下，因为我们在通过配置的方式进行声明式事务控制时也会看到这些类的影子
+
+xml方式配置声明式事务
+
+```xml
+<!--配置DataSource-->
+<bean id="datasource"
+class="com.alibaba.druid.pool.DruidDataSource">
+    <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
+    <property name="url"
+    value="jdbc:mysql://localhost:3306/mybatis"></property>
+    <property name="username"
+    value="root"></property>
+    <property name="password" value="root"></property>
+</bean>
+<!--配置sqlSessionFactoryBean,作用将sqlSessionFactory存储到spring容器-->
+<bean class="org.mybatis.spring.SqlSessionFactoryBean">
+	<property name="dataSource" ref="dataSource"></property>
+</bean>
+<!--MapperScannerConfigurer，作用扫描指定的包，产生Mapper对象存储到spring容器-->
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	<property name="basePackage" value="com.itheima.mapper"></property>
+</bean>
+<!--3.配置平台事务管理器-->
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+<property name="dataSource" ref="dataSource"/>
+</bean>
+<!--2.配置Spring提供好的Advice-->
+<tx:advice id="txAdvice" transaction-manager="transactionManager">
+    <tx:attributes>
+        <!--
+配置不同的方法的事务属性
+name：方法名称  *代表通配符 添加操作addUser，addAccount，addOrders =》add*
+isolation：隔离级别，解决事务并发问题
+timeout:超时时间 默认-1 无超时时间（单位是秒）
+read-only：是否只读 （只能查询操作才设置只读）
+propagation:事务的传播行为，解决业务方法调用业务方法（解决事务嵌套问题）
+-->
+   	 	<tx:method name="*" isolation=“READ_COMMITTED” timeout=“3” />
+    </tx:attributes>
+</tx:advice>
+<!--1.事务增强的aop-->
+<aop:config>
+	<!--配置切点表达式-->
+	<aop:pointcut id="txPointcut" expression="execution(* com.itheima.service.impl.*.*(..))"/>
+	<!--配置织入关系通知ladvice-ref引入Spring提供好的Advice-->
+	<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut"/>
+</aop:config>
+```
+
+isolation属性：指定事务的隔离级别，事务并发存在三大问题：脏读、不可重复读、幻读/虚读。可以通过设置事务的隔离级别来保证并发问题的出现，常用的是READ_COMMITTED和REPEATABLE_READ
+
+| isolation属性    | 解释                                                         |
+| ---------------- | ------------------------------------------------------------ |
+| DEFAULT          | 默认隔离级别，取决于当前数据库隔离级别，例如MySQL默认隔离级别是REPEATABLE_READ |
+| READ_UNCOMMITTED | A事务可以读取到B事务尚未提交的事务记录，不能解决任何并发问题，安全性最低，性能最高 |
+| READ_COMMITTED   | A事务只能读取到其他事务已经提交的记录，不能读取到未提交的记录。可以解决脏读问题，但是不能解决不可重复读和幻读 |
+| REPEATABLE_READ  | A事务多次从数据库读取某条记录结果一致，可以解决不可重复读，不可以解决幻读 |
+| SERIALIZABLE     | 串行化，可以解决任何并发问题，安全性最高，但是性能最低       |
+
+propagation属性：设置事务的传播行为，主要解决是A方法调用B方法时，事务的传播方式问题的，例如：使用单方的事务，还是A和B都使用自己的事务等。事务的传播行为有如下七种属性值可配置
+
+| 事务传播行为      | 解释                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| REQUIRED(默认值） | A调用B，B需要事务，如果A有事务B就加入A的事务中，如果A没有事务，B就自己创建一个事务 |
+| REQUIRED_NEW      | A调用B，B需要新事务，如果A有事务就挂起，B自己创建一个新的事务 |
+| SUPPORTS          | A调用B，B有无事务无所谓，A有事务就加入到A事务中，A无事务B就以非事务方式执行 |
+| NOT_SUPPORTS      | A调用B，B以无事务方式执行，A如有事务则挂起                   |
+| NEVER             | A调用B，B以无事务方式执行，A如有事务则抛出异常               |
+| MANDATORY         | A调用B，B要加入A的事务中，如果A无事务就抛出异常              |
+| NESTED            | A调用B，B创建一个新事务，A有事务就作为嵌套事务存在，A没事务就以创建的新事务执行 |
+
+注解方式配置声明式事务添加@Transational(isolation="",timeout="",read-only="",propagation="")
+
+xml文件中配置注解驱动
+
+```xml
+<!--配置DataSource-->
+<bean id="datasource"
+class="com.alibaba.druid.pool.DruidDataSource">
+    <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
+    <property name="url"
+    value="jdbc:mysql://localhost:3306/mybatis"></property>
+    <property name="username"
+    value="root"></property>
+    <property name="password" value="root"></property>
+</bean>
+<!--配置sqlSessionFactoryBean,作用将sqlSessionFactory存储到spring容器-->
+<bean class="org.mybatis.spring.SqlSessionFactoryBean">
+	<property name="dataSource" ref="dataSource"></property>
+</bean>
+<!--MapperScannerConfigurer，作用扫描指定的包，产生Mapper对象存储到spring容器-->
+<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	<property name="basePackage" value="com.itheima.mapper"></property>
+</bean>
+<!--配置平台事务管理器-->
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+<property name="dataSource" ref="dataSource"/>
+</bean>
+<!--事务的自动代理（注解驱动）-->
+<tx:annotation-driven transaction-manager="transationManager"/>
+```
+
+全注解方式
+
+```java
+package net.dpwl.config;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+@Configuration
+@ComponentScan("net.dpwl")
+@PropertySource("classpath:jdbc.properties")
+@MapperScan("net.dpwl.mapper")
+@EnableTransactionManager //<tx:annotation-driven transaction-manager="transationManager"/>
+public class SpringConfig{
+    @Bean
+    public DataSource dataSource(
+    	@Value("${jdbc.driver}") String driver,
+        @Value("${jdbc.url}") String url,
+        @Value("${jdbc.username}") String username,
+        @Value("${jdbc.password}") String password
+    ){
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUserName(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+        SqlSessionFactoryBean sqlSessionFactoryBean=new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+    
+    @Bean
+    public DataSourceTransactionManager transactionManager(DataSource dataSource){
+        DataSourceTransactionManager dataSourceTransactionManager=new DataSourceTransactionManager();
+        dataSourceTransactionManager.setDataSource(dataSource);
+        return dataSourceTransactionManager;
+    }
+}
+```
+
+### Spring整合web环境
+
+**Javaweb三大组件及环境特点**
+
+在Java语言范畴内，web层框架都是基于Javaweb基础组件完成的，所以有必要复习一下Javaweb组件的特点
+
+| 组件     | 作用                                           | 特点                                                         |
+| -------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| Servlet  | 服务端小程序，负责接收客户端请求并作出响应的   | 单例对象，默认第一次访问创建，可以通过配置指定服务器启动就创建，Servlet创建完毕会执行初始化init方法。每个Servlet有一个service方法，每次访问都会执行service方法，但是缺点是一个业务功能就需要配置一个Servlet |
+| Filter   | 过滤器，负责对客户端请求进行过滤操作的         | 单例对象，服务器启动时就创建，对象创建完毕执行init方法，对客户端的请求进行过滤，符合要求的放行，不符合要求的直接响应客户端，执行过滤的核心方法doFilter |
+| Listener | 监听器，负责对域对象的创建和属性变化进行监听的 | 根据类型和作用不同，又可分为监听域对象创建销毁和域对象属性内容变化的，根据监听的域不同，又可以分为监听Request域的，监听Session域的，监听ServletContext域的 |
+
+**Spring整合web环境的思路及实现**
+
+在进行Java开发时要遵循三层架构+MVC，Spring操作最核心的就是Spring容器，web层需要注入Service，service层需要注入Dao(Mapper)，web层使用Servlet技术充当的话，需要在Servlet中获得Spring容器
+
+```java
+AnnotationConfigApplicationContext applicationContext =
+new AnnotationConfigApplicationContext(ApplicationContextConfig.class);
+AccountService accountService =(AccountService) applicationContext.getBean("accountservice");
+accountService.transferMoney("tom","lucy",100);
+```
+
+web层代码如果都去编写创建AnnotationConfigApplicationContext的代码，那么配置类重复被加载了，Spring容器也重复被创建了，不能每次想从容器中获得一个Bean都得先创建一次容器，这样肯定是不允许。
+所以，我们现在的诉求很简单，如下：
+
+- ApplicationContext创建一次，配置类加载一次；
+- 最好web服务器启动时，就执行第1步操作，后续直接从容器中获取Bean使用即可；
+- ApplicationContext的引用需要在web层任何位置都可以获取到。
+
+针对以上诉求我们给出解决思路，如下：
+
+- 在ServletContextListener的contextInitialized方法中执行ApplicationContext的创建。或在Servlet的init方法中执行ApplicationContext的创建，并给Servlet的load-on-startup属性一个数字值，确保服务器启动Servlet就创建；
+- 将创建好的ApplicationContext存储到ServletContext域中，这样整个web层任何位置就都可以获取到了
+
+**Spring的web开发组件spring-web**
+
+到此，就将一开始的诉求都解决了，当然我们能想到的Spring框架自然也会想到，Spring其实已经为我们定义好了一个ContextLoaderListener，使用方式跟我们上面自己定义的大体一样，但是功能要比我们强百倍，所以，遵循Spring"拿来主义”的精神，我们直接使用Spring提供的就可以了，开发如下：
+先导入Spring-web的坐标:
+
+```xml
+<dependency>
+    <groupid>org.springframework</groupid>
+    <artifactId>spring-web</artifactId>
+    <version>5.3.7</version>
+</dependency>
+```
+
+```xml
+<!--spring web 配置文件-->
+<!--定义全局参数-->
+<context-param>
+    <param-name>contextConfigLocation</param-name>
+    <!--spring配置文件位置-->
+    <param-value>classpath:applicationContext.xml</param-value>
+</context-param>
+<!--配置Listener-->
+<listener>
+    <listener-class>
+        org.springframework.web.context.ContextLoaderListener
+    </listener-class>
+</listener>
+```
+
+```java
+// spring-web入口方法
+@WebServlet(urlPatterns="/accountServlet")
+public class AccountServlet extends HttpServlet{
+    proptected void doGet(HttpServletRequest requst,HttpServletResponse response) throws EXception{
+        // web层调用service层，获得AccountService，accountService存在applicationContext中
+        // 从servletContext域中去获得applicationContext
+        ServletContext servletContext = request.getServletContext();
+        ApplicationContext app = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+        AccountService accountService = app.getBean(AccountService.class);
+        //AccountService类的转账方法
+        accountService.transferMoney("tom","lucy",500);
+    }
+}
+```
+
+### web层MVC架构思想与设计思路
+
+MVC框架思想及其设计思路
+Java程序员在开发一般都是MVC+三层架构，MVC是web开发模式，传统的Javaweb技术栈实现的MVC如下
+
+![QQ20260121-142117](.\img\QQ20260121-142117.png)
+
+原始Javaweb开发中，Servlet充当Controller的角色，Jsp充当View角色，JavaBean充当模型角色，后期Ajax异步流行后，在加上现在前后端分离开发模式成熟后，View就被原始Html+Vue替代。原始Javaweb开发中，Service充当Controller有很多弊端，显而易见的有如下几个：
+
+| Servlet作为Controller的问题                                  | 解决思路和方案                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 个业务功能请求都对应一个Servlet                              | 根据业务模块去划分Controller                                 |
+| 每个Servlet的业务操作太繁琐                                  | 将通用的行为，功能进行抽取封装                               |
+| Servlet获得Spring容器的组件只能通过客户端代码去获取，不能优雅的整合 | 通过Spring的扩展点，去封装一个框架，从原有的Servlet完全接手过来web层的业务 |
+
+负责共有行为的Servlet称之为前端控制器，负责业务行为的JavaBean称之为控制器Controller
+
+分析前端控制器基本功能如下：
+1、具备可以映射到业务Bean的能力
+2、具备可以解析请求参数、封装实体等共有功能
+3、具备响应视图及响应其他数据的功能
+
+## Spring MVC
+
+**SpringMVC概述**
+SpringMVC是一个基于Spring开发的MVC轻量级框架，Spring3.0后发布的组件，SpringMVC和Spring可以无缝整合，使用DispatcherServlet作为前端控制器，且内部提供了处理器映射器、处理器适配器、视图解析器等组件，可以简化JavaBean封装，Json转化、文件上传等操作。
+![QQ20260121-143810](.\img\QQ20260121-143810.png)
+
+```xml
+<!--WEB-INF/web.xml 配置Spring mvc-->
+<!--配盟contextLoaderListener加载扫描Service包的配置-->
+<context-param>
+    <!--初始化参数，指定spring扫描器配置-->
+	<param-name>contextConfigLocation</param-name>
+    <param-value>classpath:applicationContext.xml</param-value>
+</context-param>
+<listener>
+	<listener-class>
+    org.springframework.web.context.ContextLoaderListener
+    <listener-class>
+</listener>
+        
+<!--配置DispatcherServlet-->
+<servlet>
+	<servlet-name>DispatcherServlet</servlet-name>
+	<servlet-class>
+        org.springframework.web.servlet.DispatcherServlet
+    </servlet-class>
+    <!--配置Controller扫描器的配置-->
+    <init-param>
+    	<param-name>contextConfigLocation</param-name>
+    	<param-value>classpath:spring-mvc.xml</param-value>
+    </init-param>
+</servlet>
+<servlet-mapping>
+	<servlet-name>DispatcherServlet</servlet-name>
+    <!--url转发规则，所有的都转发-->
+	<url-pattern>/</url-pattern>
+</servlet-mapping>
+    
+<!--spring—mvc.xml 配置Controller组件扫描-->
+<context:component-scan base-package="com.itheima.controller" />
+<!--applicationContext.xml 配置Service组件扫描-->
+<context:component-scan base-package="com.itheima.service"/>
+```
+
+```java
+@Controller
+public class QuickController{
+    //直接注入ServIce进行使用
+    @Autowired
+    private QuickService quickService;
+    
+    @RequestMapping ("/show")
+    public String show(){
+        System.out.println("show running...."+quickService):
+   		return "/index.jsp";
+    }
+    
+}
+```
+
+上面已经完成的快速入门的操作，也在不知不觉中完成的Spring和SpringMVC的整合，我们只需要按照规则去定义Controller和业务方法就可以。但是在这个过程中，肯定是很多核心功能类参与到其中，这些核心功能类，一般称为组件。当请求到达服务器时，是哪个组件接收的请求，是哪个组件帮我们找到的Controller，是哪个组件帮我们调用的方法，又是哪个组件最终解析的视图？
+
+| 组件                         | 描述                                                         | 常用组件                     |
+| ---------------------------- | ------------------------------------------------------------ | ---------------------------- |
+| 处理器映射器：HandlerMapping | 匹配映射路径对应的Handler，返回可执行的处理器链对象HandlerExecutionChain对象 | RequestMappingHandlerMapping |
+| 处理器适配器：HandlerAdapter | 匹配HandlerExecutionChain对应的适配器进行处理器调用，返回视图模型对象 | RequestMappingHandlerAdapter |
+| 视图解析器：ViewResolver     | 对视图模型对象进行解析                                       | InternalResourceViewResolver |
+
+### 请求映射路径的配置
+
+配置映射路径，映射器处理器才能找到Controller的方法资源，目前主流映射路径配置方式就是@RequestMapping
+
+| 相关注解        | 作用                                           | 使用位置   |
+| --------------- | ---------------------------------------------- | ---------- |
+| @RequestMapping | 设置控制器方法的访问资源路径，可以接收任何请求 | 方法和类上 |
+| @GetMapping     | 设置控制器方法的访问资源路径，可以接收GET请求  | 方法和类上 |
+| @PostMapping    | 设置控制器方法的访问资源路径，可以接收POST请求 | 方法和类上 |
+
+### 请求参数的获取
+
+`http://localhost/param4?hobby=zq&hobby=pq&hobby=tq`
+
+```java
+@GetMapping ("/param4")
+// 如果使用集合来封装请求参数必须使用@RequestParam注解
+public String param4 (@RequestParam List<String> hobby){
+	for (String s : hobby) {
+    	System.out.println(s);
+    }
+    return "/index.jsp";
+}
+// 使用数组来封装请求参数不用使用注解
+public String param3 (String[] hobby){
+	for (String s : hobby) {
+    	System.out.println(s);
+    }
+    return "/index.jsp";
+}
+
+//http://localhost/param2?username=zhangsan&age=18
+@GetMapping ("/param2")
+// 如果url中的参数和方法中的参数名不一致，需要使用@RequestParam(url参数名)注解,require 是否必须，如果为true，url中不传就会报错.defaultValue 默认值
+// require 默认是false，当参数不传时看数据类型，比如age是int类型不能接收null，所以会报错，通常方法中的参数都是用包装类（Integer)可以解决空值的问题。
+public String param2(@RequestParam(value="name",require=true，defaultValue="111")                     String name, int age){
+    System.out.println (name+"==="+age);
+    return "/index.jsp";
+}
+```
+
+116
