@@ -8292,6 +8292,392 @@ public String param2(@RequestParam(value="name",require=true，defaultValue="111
     System.out.println (name+"==="+age);
     return "/index.jsp";
 }
+
+@PostMapping("/param7")
+//@RequestBody 请求体封装注解，把请求体整个封装给body变量
+public String param7(@RequestBody String body){
+    System.out.println(body);
+    // 使用jackson进行转换，将json格式的字符串转换成User对象
+    ObjectMapper objectMapper = new ObjectMapper();
+    // 把转换工具配置到spring-mvc的handlerAdapter中可以实现自动转换json
+    User user = objectMapper.readValue(body,User.class);
+    System.out.println(user);
+    return "/index.jsp";
+}
+
+@PostMapping("/param8")
+//@RequestBody 配置handleAdapter自动转换json到对象
+public String param8(@RequestBody User user){
+    System.out.println(user);
+    return "/index.jsp";
+}
+
+// 配置handleAdapter
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+    <property name="messageConverters">
+    	<list>
+    		<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" />
+    	</list>
+    </property>
+</bean>
 ```
 
-116
+**接收Restful风格数据**
+什么是Rest风格?
+Rest(Representational StateTransfer)表象化状态转变(表述性状态转变),在20oo年被提出,基于HTTP、URI、xmI、JSON等标准和协议，支持轻量级、跨平台、跨语言的架构设计。是Web服务的一种新网络应用程序的设计风格和开发方式。
+
+Restful风格的请求，常见的规则有如下三点：
+
+1. 用URI表示某个模块资源，资源名称为名词；
+
+   | 模块             | URI资源                  |
+   | ---------------- | ------------------------ |
+   | 用户模块user     | http://ocalhost/user     |
+   | 商品模块 product | http://localhost/product |
+   | 账户模块account  | http://localhost/account |
+   | 日志模块 log     | http://localhost/log     |
+
+2. 用请求方式表示模块具体业务动作，例如：GET表示查询、POST表示插入、PUT表示更新、DELETE表示删除
+
+   | URI资源                    | 请求方式 | 参数                                                        | 解释                  |
+   | -------------------------- | -------- | ----------------------------------------------------------- | --------------------- |
+   | http://localhost/user/100  | GET      | 存在URL地址中：100                                          | 查询id=100的User数据  |
+   | http://ocalhost/user       | POST     | 存在请求体中Json:("username":"haohao","age":18)             | 插入User数据          |
+   | http://localhost/user      | PUT      | 存在请求体中Json：("id":100,"username":"haohao","age":18}   | 修改id=100的User数据  |
+   | http://localhost/user/100  | DELETE   | 存在URL地址中：100                                          | 删除id=100的User数据  |
+   | http://localhost/product/5 | GET      | 存在URL地址中：5                                            | 查询id=5的Product数据 |
+   | http://localhost/product   | POST     | 存在请求体中Json：("proName":"小米手机","price":1299)       | 插入Product数据       |
+   | http://localhost/product   | PUT      | 存在请求体中Json:["id":5,"proName":"小米手机","price":1299} | 修改id=5的Product数据 |
+   | http://localhost/product/5 | DELETE   | 存在URL地址中：5                                            | 删除id=5的Product数据 |
+
+3. 用HTTP响应状态码表示结果，国内常用的响应包括三部分：状态码、状态信息、响应数据
+
+   ```json
+   {
+       "code":200,
+   	"message":"成功",
+   	"data":{
+   	"username":"haohao",
+   	"age":18
+   	}
+   }
+   {
+       "code":300,
+   	"message"："执行错误",
+   	"data":""
+   }
+   
+   ```
+
+```java
+// 获取Restful风格的参数
+@GetMapping("/user/{id}/{xxx}")
+//Restful风格的参数在url后直接连接，不是键值对的方式就需要使用注解@PathVariable
+public String findUserById(
+    @PathVariable("id") int id,
+    @PathVariable("xxx") String yyy
+                          ){
+    System.out.println("id==>"+id);
+}
+```
+
+接收文件上传的数据，文件上传的表单需要一定的要求，如下：
+
+- 表单的提交方式必须是POST
+- 表单的enctype属性必须是multipart/form-data
+- 文件上传项需要有name属性
+
+```html
+<form action="" enctype="multipart/form-data" method="post" >
+	<input type="file" name="myFile">
+</form>
+```
+
+```java
+// 获取上传文件数据
+@PostMapping("/param10")
+// post请求参数在请求体中，所以要使用@RequestBody注解
+// 如果上传多个文件使用MultipartFile[] 数组
+public String param10(@RequestBody MultipartFile myFile){
+    // spring mvc 规定上传文件接收时使用MultipartFile，所以传参时表单的enctype属性必须是multipart/form-data，变量名称和文件上传的name属性一致。spring mvc默认没有开启文件上传的接收，需要手动开启
+    // 将上传的文件进行保存
+    // 1.获得当前上传的文件的输入流
+    InputStream inputStream = myFile.getInputStream();
+    // 2.获得上传文件位置的输出流
+    OutputStream outputStream = new OutputStream("D:\\upload\\file\\"+myFile.getOriginalFilename());
+    // 3.执行文件拷贝
+    IOUtils.copy(inputStream,outputStream);
+    // 4.关闭流资源
+    inputStream.close();
+    outputStream.close();
+}
+```
+
+服务器端，由于映射器适配器需要文件上传解析器，而该解析器默认未被注册，所以手动注册
+
+```xml
+<!--配置文件上传解析器，注意：id的名字是固定写法-->
+<bean id="multipartResolver"
+class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+<property name="defaultEncoding" value="UTF-8"/><!--文件的编码格式默认是ISO8859-1-->
+<property name="maxUploadsizePerFile" value="1048576"/> <!--上传的每个文件限制的大小单位字节-->
+<property name="maxUploadsize" value="3145728"/><!--上传文件的总大小-->
+<property name="maxInMemorySize" value="1048576"/> <!--上传文件的缓存大小-->
+</bean>
+```
+
+而CommonsMultipartResolver底层使用的Apache的是Common-fileuplad等工具API进行的文件上传
+
+```xml
+<dependency>
+<groupid>commons-fileupload</groupId>
+<artifactId>commons-fileupload</artifactId>
+<version>1.4</version>
+</dependency>
+```
+
+接收Http请求头数据，接收指定名称的请求头
+
+```java
+@GetMapping("/headers")
+public String headers (@RequestHeader("Accept-Encoding") String acceptEncoding){
+	System.out.println("Accept-Encoding:"+acceptEncoding);
+    return "/index.jsp";
+}
+// 接收所有的请求头信息
+@GetMapping("/headersMap")
+public String headers (@RequestHeader Map<String,String> map){
+    map.forEach((k,v)->{
+        System.out.println(k+":"+v);
+    });	
+    return "/index.jsp";
+}
+```
+
+获得客户端携带的Cookie数据
+
+```java
+@GetMapping("/cookies")
+public String cookies(@CookieValue(value="JSESSIONID",defaultValue="") String jsessionid){
+    System.out.println(jsessionid);
+    return "index.jsp";
+}
+```
+
+获得转发Request域中数据，在进行资源之间转发时，有时需要将一些参数存储到request域中携带给下一个资源
+
+```java
+// 模拟转发资源
+@GetMapping ("/request1")
+// 通过HttpServletRequest和HttpServletRsponse可以获取到底层的Request和Response
+public String requestl (HttpServletRequest request,HttpServletResponse response){
+    //向request域中存储数据
+    request.setAttribute(name:"name",o:"haohao");
+    return "/request2";
+}
+// 获取request域中的数据
+@GetMapping ("/request2")
+// 使用@RequestAttribute 注解获取域中数据
+public String request2 (@RequestAttribute("name") String name){
+	System.out.println(name);
+}    
+```
+
+### 静态资源访问问题
+
+spring-mvc 项目默认情况下在浏览器地址栏输入静态资源的地址会出现找不到资源的问题，因为普通的java web项目由tomcat的defaultServlet来负责解析，它能解析静态资源。而spring-mvc项目配置的DispatcherServlet会覆盖掉tomcat的defaultServlet，但是它没有解析静态资源的能力所以导致静态资源找不到。
+
+解决办法一：在WEB-INF/web.xml配置更精确的匹配配置
+
+```xml
+<!--再次激活DefaultServlet url-pattern配置更加精确一点-->
+<servlet-mapping>
+	<servlet-name>default</servlet-name>
+	<url-pattern>*.html</url-pattern><!--根据文件类型匹配，优先级高于通过路径匹配-->
+</servlet-mapping>
+<servlet-mapping>
+	<servlet-name>default</servlet-name>
+    <url-pattern>/img/*</url-pattern><!--目录匹配，把匹配路径配置的更精确-->
+</servlet-mapping>
+```
+
+第二种方式，在spring-mvc.xml中去配置静态资源映射，匹配映射路径的请求到指定的位置去匹配资源
+
+```xml
+<!--mappings是映射资源路径，location是对应资源所在的位置-->
+<mvc:resources mapping="/img/*" location="/img/" />
+<mvc:resources mapping="/css/*" location="/css/" />
+<mvc:resources mapping="/css/*" location="/js/" />
+<mvc:resources mapping="/html/*" location="/html/" />
+```
+
+第三种方式，在spring-mvc.xml中去配置`<mvc:default-servlet-handler>`，该方式是注册了一个DefaultServletHttpRequestHandler处理器，静态资源的访问都由该处理器去处理，这也是开发中使用最多的
+
+```xml
+<mvc:default-servlet-handler />
+```
+
+注解驱动`<mvc:annotation-driven>`标签
+
+这么复杂繁琐的配置，是不是看上去有点头大？Spring是个”暖男”，将上述配置浓缩成了一个简单的配置标签，那就是mvc的注解驱动,该标签内部会帮我们注册RequestMappingHandlerMapping、注册
+RequestMappingHandlerAdapter并注入Json消息转换器等，上述配置就可以简化成如下：
+
+```xml
+<!--配置handlerMapping-->
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"></bean>
+<!--配置handleAdapter-->
+<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+    <property name="messageConverters">
+    	<list>
+    		<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" />
+    	</list>
+    </property>
+</bean>
+<!--配置mvc的注解驱动，上面的就不用配置了，会自动配置-->
+<mvc:annotation-driven />
+```
+
+PS:`<mvcannotation-driven>`标签在不同的版本中，帮我们注册的组件不同，Spring3.0.X版本注册是DefaultAnnotationHandlerMapping 和AnnotationMethodHandlerAdapter,由于框架的发展,从Spring 3.1.X开始注册组件变为 RequestMappingHandlerMapping和RequestMappingHandlerAdapter
+
+### Spring MVC的响应处理
+
+**传统同步业务数据响应**
+Spring的接收请求的部分我们讲完了，下面在看一下Spring怎么给客户端响应数据，响应数据主要分为两大部分：
+
+- 传统同步方式：准备好模型数据，在跳转到执行页面进行展示，此方式使用越来越少了，基于历史原因，一些旧项目还在使用；
+- 前后端分离异步方式：前端使用Ajax技术+Restful风格与服务端进行Json格式为主的数据交互，目前市场上几乎都是此种方式了。
+
+传统同步业务在数据响应时，SpringMVC又涉及如下四种形式：
+
+- 请求资源转发；使用forward: 关键字，可以省略不写
+
+- 请求资源重定向；使用redirect: 关键字
+
+- 响应模型数据；
+
+  ```java
+  @RequestMapping("/res3")
+  public ModelAndView res3(ModelAndView modelAndView){
+      // ModelAndView封装模型数据和视图名
+      // 设置模型数据
+      User user = new User();
+      user.setUsername("lj");
+      user.setAge(18);
+      modelAndView.addObject("user",user);    
+      // 设置视图名称，在页面中展示模型数据
+      modelAndView.setViewName("/user.jsp");
+  }
+  
+  // user.jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+  <title>Title</title>
+  </head>
+  <body>
+  <h1>Hello SpringMVC!</h1>
+  <h1>转发显示的模型数据是：${user.username}--${user.age}</h1>
+  </body>
+  </html>
+  ```
+
+- 直接回写数据给客户端；
+
+  ```java
+  // 直接返回字符串
+  @RequestMapping("/res4")
+  @ResponseBody //加上此注解，告诉springmvc返回的字符串不是视图名，是以响应体方式响应的数据
+  public String res4(){
+     return "hello spring mvc"; // 默认，会报错，这不到这个名称的视图
+  }
+  ```
+
+  
+
+![QQ20260122-155329](.\img\QQ20260122-155329.png)
+
+**前后端分离异步业务数据响应**
+其实此处的回写数据，跟上面回写数据给客户端的语法方式一样，只不过有如下一些区别：
+
+- 同步方式回写数据，是将数据响应给浏览器进行页面展示的，而异步方式回写数据一般是回写给Ajax引擎的，即谁访问服务器端，服务器端就将数据响应给谁
+- 同步方式回写的数据，一般就是一些无特定格式的字符串，而异步方式回写的数据大多是Json格式字符串
+
+```java
+@GetMapping("/ajax/req3")
+@ResponseBody
+public User res3(){
+    User user = new User();
+    user.setUsername("haohao");
+	user.setAge(20);
+    return user; // 返回会自动把User实体转成json
+}
+// 如果方法很多的情况下，都是使用json返回可以把@ResponseBody提到类上
+// 如果是Restful风格前后端分离开发，可以把@Controller和@ResponseBody两个注解合并成@RestController
+```
+
+### Spring mvc的拦截器
+
+拦截器Interceptor简介
+SpringMVC的拦截器Interceptor规范，主要是对Controller资源访问时进行拦截操作的技术，当然拦截后可以进行权限控制，功能增强等都是可以的。拦截器有点类似Javaweb开发中的Filter，拦截器与Filter的区别如下图：
+
+![QQ20260122-163257](.\img\QQ20260122-163257.png)
+
+由上图,对Filter和Interceptor 做个对比:
+
+|               | Fiter技术                                              | Interceptor技术                                             |
+| ------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| 技术范畴      | Javaweb原生技术                                        | SpringMVC框架技术                                           |
+| 拦截/过滤资源 | 可以对所有请求都过滤，包括任何servlet、Jsp、其他资源等 | 只对进入了SpringMVc管辖范围的才拦截，主要拦截Controller请求 |
+| 执行时机      | 早于任何Servlet执行                                    | 晚于DispatcherServlet执行                                   |
+
+HandlerInterceptor接口方法的作用及其参数、返回值详解如下：
+
+|                 | 作用                                                         | 参数                                                         | 返回值                                                       |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| preHandle       | 对拦截到的请求进行预处理，返回true放行执行处理器方法，false不放行 | Handler是拦截到的Controller方法处理器                        | 一旦返回false，代表终止向后执行，所有后置方法都不执行，最终方法只执行对应preHandle返回了true的 |
+| postHandle      | 在处理器的方法执行后，对拦截到的请求进行后处理，可以在方法中对模型数据和视图进行修改 | Handler是拦截到的Controller方法处理器;modelAndView是返回的模型视图对象 | 无                                                           |
+| afterCompletion | 视图渲染完成后（整个流程结束之后），进行最后的处理，如果请求流程中有异常，可以处理异常对象 | Handler是拦截到的Controller方法处理器；ex是异常对象          | 无                                                           |
+
+```java
+// 拦截器测试接口实现
+public class MyInterceptor1 implements HandlerInterceptor {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("MyInterceptor1.....preHandle");
+        return true; //是否放行，true放行
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("MyInterceptor1....postHandle");;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("MyInterceptor1..afterCompletion");
+    }
+}
+```
+
+```xml
+<!--配置拦截器-->
+<mvc:interceptors>
+    <mvc:interceptor>
+    <!--对哪些请求路径进行拦截-->
+    <mvc:mapping path="/**"/> <!--/*只拦截一级的，/**拦截所有请求-->
+    	<bean class="net.dpwl.webapi.interceptors.MyInterceptor1"></bean>
+    </mvc:interceptor>
+</mvc:interceptors>
+```
+
+**拦截器执行顺序**
+拦截器三个方法的执行顺序
+当每个拦截器都是放行状态时，三个方法的执行顺序如下：
+
+![QQ20260122-171336](.\img\QQ20260122-171336.png)
+
+当Interceptor1和Interceptor2处于放行，Interceptor3处于不放行时，三个方法的执行顺序如下：
+
+![QQ20260122-171806](.\img\QQ20260122-171806.png)
+
+134
