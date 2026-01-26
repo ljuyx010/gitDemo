@@ -8680,4 +8680,234 @@ public class MyInterceptor1 implements HandlerInterceptor {
 
 ![QQ20260122-171806](.\img\QQ20260122-171806.png)
 
-134
+### Spring MVC的全注解开发
+
+**Spring-MVC.xml中组件转化为注解形式**
+`<mvc:annotation-driven>`、`<mvc:default-servlet-handler />`和`<mvc:interceptor >`怎么办呢?SpringMVC 提供了一个注解@EnableWebMvc,我们看一下源码,内部通过@Import导入了DelegatingWebMvcConfiguration类
+
+```java
+package net.dpwl.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.multipart.commons.CommonsMultipartResolver;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/26 11:21
+ */
+@Configuration  // 1.配置类
+@ComponentScan("net.dpwl.controller") // 2.扫描controller包
+@EnableWebMvc //4.开启WebMvc配置,配置mvc相关的bean
+public class SpringMVCConfig {
+    // 3.配置非自定义的bena，配置文件上传解析器
+    @Bean
+    public CommonsMultipartResolver multipartResolver() {
+        CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver();
+        multipartResolver.setDefaultEncoding("UTF-8");
+        multipartResolver.setMaxUploadSize(1024 * 1024 * 10);
+        return multipartResolver;
+    }
+}
+
+```
+
+```java
+package net.dpwl.controller;
+
+import net.dpwl.interceptors.MyInterceptor;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.config.annotation.DefaultServletHandlerConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/26 11:40
+ */
+@Component  //@ComponentScan("net.dpwl.controller")会自动扫描本包所以会自动执行本类，达到自动加载重新静态资源处理和拦截器的方法。
+public class WebMVCConfigurer  implements WebMvcConfigurer {
+    @Override
+    public void configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer) {
+        // 开启默认的servlet处理,将静态资源的请求转发给默认的servlet处理
+        configurer.enable();
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // 注册自定义的拦截器,并指定拦截的路径
+        registry.addInterceptor(new MyInterceptor()).addPathPatterns("/**");
+    }
+}
+
+```
+
+
+
+**DispatcherServlet加载核心配置类**
+
+现在是使用SpringMVCConfig核心配置类提替代的spring-mvc.xml,怎么加载呢？参照Spring的
+ContextLoaderListener加载核心配置类的做法，定义了一个AnnotationConfigWebApplicationContext,通过代码注册核心配置类
+
+```java
+package net.dpwl.config;
+
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/26 11:51
+ */
+public class MyAnnotationConfigWebApplicationContext extends AnnotationConfigWebApplicationContext {
+    public MyAnnotationConfigWebApplicationContext() {
+        // 注册SpringMVCConfig配置类，从而加载spring组件扫描
+        super.register(SpringMVCConfig.class);
+    }
+}
+
+```
+
+```xml
+<!--web.xml 文件修改spring mvc核心配置文件为加载核心配置类-->
+<!-- 配置DispatcherServlet -->
+    <servlet>
+        <servlet-name>DispatcherServlet</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <!--初始化参数，加载Springmvc的配置文件，从而加载spring组件扫描-->
+<!--            <param-name>contextConfigLocation</param-name>-->
+<!--            <param-value>classpath:springmvc.xml</param-value>-->
+<!--加载spring mvc的核心配置类 -->
+            <param-name>contextClass</param-name>
+            <param-value>net.dpwl.config.MyAnnotationConfigWebApplicationContext</param-value>
+        </init-param>
+    </servlet>
+```
+
+**消除web.xml**
+
+Servlet3.0环境中,web容器提供了javax.servlet.ServletContainerlnitializer接口,实现了该接口后,在对应的类加载路径的META-INF/services目录创建一个名为javax.servlet.ServletContainerlnitializer的文件，文件内容指定具体的ServletContainerlnitializer实现类，那么，当web容器启动时就会运行这个初始化器做
+一些组件内的初始化工作；
+基于这个特性,Spring就定义了一个SpringServletContainerInitializer实现了ServletContainerInitializer接口;
+而SpringServletContainerlnitializer会查找实现了WebApplicationInitializer的类，Spring又提供了一个WebApplicationInitializer的基础实现类AbstractAnnotationConfigDispatcherServletInitializer,当我们编写类继承AbstractAnnotationConfigDispatcherServletInitializer时,容器就会自动发现我们自己的类，
+在该类中我们就可以配置Spring和SpringMVC的入口了。
+
+```java
+package net.dpwl.init;
+
+import net.dpwl.config.SpringConfig;
+import net.dpwl.config.SpringMVCConfig;
+import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/26 14:25
+ */
+public class MyAbstractAnnotationConfigDispatcherServletInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+    @Override
+//    提供spring容器的核心配置类
+    protected Class<?>[] getRootConfigClasses() {
+        return new Class[]{SpringConfig.class};
+    }
+
+    @Override
+//    提供springmvc容器的核心配置类
+    protected Class<?>[] getServletConfigClasses() {
+        return new Class[]{SpringMVCConfig.class};
+    }
+
+    @Override
+//    提供springmvc容器的映射路径
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+}
+// META-INF/services目录下创建文件javax.servlet.ServletContainerInitializer
+// 放入初始化类的名称：MyAbstractAnnotationConfigDispatcherServletInitializer
+```
+
+### 前端控制器初始化
+
+前端控制器DispatcherServlet是SpringMVC的入口，也是SpringMVC的大脑，主流程的工作都是在此完成的，梳理一下DispatcherServlet 代码。DispatcherServlet 本质是个Servlet,当配置了load-on-startup时,会在服务器启动时就执行创建和执行初始化init方法，每次请求都会执行service方法DispatcherServlet的初始化主要做了两件事：
+
+- 获得了一个SpringMVC 的ApplicationContext容器；
+- 注册了SpringMVC的九大组件。
+
+### 前端控制器执行主流程
+
+![QQ20260126-154011](.\img\QQ20260126-154011.png)
+
+### Spring mvc的异常处理机制
+
+SpringMVC异常的处理流程
+异常分为编译时异常和运行时异常，编译时异常我们try-cache进行捕获，捕获后自行处理，而运行时异常是不可预期的，就需要规范编码来避免。在SpringMVC中，不管是编译异常还是运行时异常，都可以最终由SpringMVC提供的异常处理器进行统一处理，这样就避免了随时随地捕获处理的繁琐性。
+当然除了繁琐之外，我们在进行前后端分离异步开发时，往往返回统一格式的结果给客户端，例如：
+{"code":200,"message":"","data":{"username":"haohao","age":null},即使报异常了,也不能把状态码500直接扔给客户端丢给用户，需要将异常转换成符合上面格式的数据响应给客户端更友好。
+
+SpringMVC处理异常的思路是，一路向上抛，都抛给前端控制器DispatcherServlet，DispatcherServlet在调用异常处理器ExceptionResolver进行处理，如下图：
+
+![QQ20260126-170213](.\img\QQ20260126-170213.png)
+
+SpringMVC提供了以下三种处理异常的方式：
+
+- 简单异常处理器：使用SpringMVC内置的异常处理器处理SimpleMappingExceptionResolver;
+
+  ```java
+  // 配置简单的异常处理类
+      @Bean
+      public SimpleMappingExceptionResolver simpleMappingExceptionResolver() {
+          SimpleMappingExceptionResolver resolver = new SimpleMappingExceptionResolver();
+          // 不管是什么异常，统一的响应一个友好页面
+          resolver.setDefaultErrorView("/error.html");
+          Properties mappings = new Properties(); // 配置异常类型和视图的映射关系
+          mappings.setProperty("java.lang.RuntimeException", "/error.html"); //key 异常类型，value 视图名称
+  //        区分异常类型，根据不同的异常类型，可以跳转不同的视图
+          resolver.setExceptionMappings(mappings);
+          return resolver;
+      }
+  ```
+
+- 自定义异常处理器：实现HandlerExceptionResolver接口，自定义异常进行处理；
+
+  ```java
+  package net.dpwl.config;
+  
+  import org.springframework.web.servlet.HandlerExceptionResolver;
+  import org.springframework.web.servlet.ModelAndView;
+  
+  import javax.servlet.http.HttpServletRequest;
+  import javax.servlet.http.HttpServletResponse;
+  import java.io.IOException;
+  
+  /**
+   * @author 混江龙
+   * @version 1.0
+   * @time 2026/1/26 17:29
+   */
+  public class MyHandlerExceptionResolver implements HandlerExceptionResolver {
+      @Override
+      public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
+          ModelAndView view = new ModelAndView();
+          view.setViewName("/error.html");
+  //  前后端分离开发，响应json格式的字符串{“code”:0,"msg":"error"}
+          String resultJson="{“code”:0,\"msg\":\"error\"}";
+          try {
+              httpServletResponse.getWriter().write(resultJson);
+          } catch (IOException ex) {
+              throw new RuntimeException(ex);
+          }
+          return null;
+      }
+  }
+  
+  ```
+
+- 注解方式:使用@ControllerAdvice +@ExceptionHandler来处理。
+
+149
