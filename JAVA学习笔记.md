@@ -8962,3 +8962,21 @@ public class GlobalExceptionHandler {
 | DefaultHandlerExceptionResolver   | 默认处理器异常解析器，所有异常处理器都不匹配时，最后执行的异常处理器 |
 | ResponseStatusExceptionResolver   | 响应状态异常解析器，结合使用@ResponseStatus标注的异常使用    |
 
+## Spring Boot
+
+spring boot项目发布，通过maven打包`package`，然后把打好的jar包上传到服务器，通过运行命令`java -jar 网站包.jar`就可以运行起来web项目。
+
+配置文件优先级：
+
+当同目录下有多个配置文件，就以.Properties为主
+
+外部约定配置文件加载顺序：
+springboot启动还会扫描以下位置的application.properties或者application.ym文件作为Spring boot的默认配置文件（从低到高）：
+
+1. classpath（即resources文件夹下）根目录下的
+2. classpath根config/
+3. 项目根目录
+4. 项目根目录/config
+5. 直接子目录/config（直接子目录：命令行上运行`java -jar XXX.jar --spring.config.location=D:\config/ `命令指定的目录）
+
+2-5
