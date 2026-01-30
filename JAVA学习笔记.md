@@ -8910,4 +8910,55 @@ SpringMVC提供了以下三种处理异常的方式：
 
 - 注解方式:使用@ControllerAdvice +@ExceptionHandler来处理。
 
-149
+```java
+package net.dpwl.config;
+
+import com.sun.net.httpserver.Authenticator;
+import net.dpwl.pojo.Result;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.io.IOException;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/1/28 15:20
+ */
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(value=RuntimeException.class)
+    public ModelAndView runtimeExceptionResolverMethod(RuntimeException e) {
+        System.out.println(e.getMessage());
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName("/error.html");
+        return modelAndView;
+    }
+
+
+    @ExceptionHandler(value=IOException.class)
+    @ResponseBody
+    public Result ioExceptionResolverMethod(IOException e) {
+        System.out.println(e.getMessage());
+        Result result = new Result();
+        result.setCode(500);
+        result.setMsg("io异常");
+        return result;
+    }
+
+}
+```
+
+### SpringMVC常用的异常解析器
+
+| 接口或类                          | 说明                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| HandlerExceptionResolver          | 异常处理器类的顶级接口，实现了该接口的类都会作为异常处理器类 |
+| MyHandlerExceptionResolver        | 自定义的处理器类，实现了HandlerExceptionResolver接口         |
+| HandlerExceptionResolverComposite | 异常解析器混合器，内部存在集合存储多种异常解析器             |
+| SimpleMappingExceptionResolver    | 简单映射异常处理器，可以配置异常与对应的错误视图             |
+| ExceptionHandlerExceptionResolver | 异常处理器异常解析器，默认会被注册到Spring容器中，@ExceptionHandler方式异常处理就是该解析器解析的 |
+| DefaultHandlerExceptionResolver   | 默认处理器异常解析器，所有异常处理器都不匹配时，最后执行的异常处理器 |
+| ResponseStatusExceptionResolver   | 响应状态异常解析器，结合使用@ResponseStatus标注的异常使用    |
+
