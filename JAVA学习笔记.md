@@ -8968,7 +8968,7 @@ spring boot项目发布，通过maven打包`package`，然后把打好的jar包�
 
 配置文件优先级：
 
-当同目录下有多个配置文件，就以.Properties为主
+当同目录下有多个配置文件，就以.Properties为主（推荐使用.yml可读性更强，yml的属性值前有一个空格）
 
 外部约定配置文件加载顺序：
 springboot启动还会扫描以下位置的application.properties或者application.ym文件作为Spring boot的默认配置文件（从低到高）：
@@ -8979,4 +8979,71 @@ springboot启动还会扫描以下位置的application.properties或者applicati
 4. 项目根目录/config
 5. 直接子目录/config（直接子目录：命令行上运行`java -jar XXX.jar --spring.config.location=D:\config/ `命令指定的目录）
 
-2-5
+### profile配置文件加载
+
+Profile的意思是配置，对于应用程序来说，不同的环境需要不同的配置。
+SpringBoot框架提供了多profile的管理功能，我们可以使用profile功能来区分不同环境的配置。
+1、多Profile文件
+1.Spring官方给出的语法规则是application-{profile}.properties(.yaml.yml)。
+2.如果需要创建自定义的的properties文件时，可以用application-xxx.properties的命名方式，根据实际情况，我创建了一个开发环境下使用的properties文件和一个生产环境下使用的properties文件，其中只对端口进行了配置，如下图所示：
+
+![QQ20260131-110403](.\img\QQ20260131-110403.png)
+
+```properties
+spring.profiles.acive=prod //使用生产环境的配置
+```
+
+**配置文件绑定类属性**
+
+使用`@value("${配置名}")`把配置文件的属性值和bean的属性绑定
+
+```java
+@ConfigurationProperties(prefix="user") //使用此注解可以把spring boot的yml配置文件中以user开头的属性一次性注入bean
+@Validated // JSR303数据校验注解，需要开启spring-boot-starter-validation的启动器
+@PropertySource("classpath:data/user.properties") //指定绑定配置文件，只能指定properties类型的
+public class User{
+    @NotNull  // JSR303数据校验注解，该属性不能为空，使用javax.validationd 的依赖
+    private String userName;
+    private Integer age;
+}
+```
+
+松散绑定：同时支持全大写，驼峰命名(userName)，烤肉串命名（a-b-c），蛇形命名（a_b_c）,自动绑定bean属性
+
+| 注入方式       | @ConfigurationProperties | @Value                         |
+| -------------- | ------------------------ | ------------------------------ |
+| 功能           | 批量注入配置文件的属性   | 一个个指定                     |
+| 松散绑定       | 支持                     | 有限支持（全小写，驼峰，蛇形） |
+| spEl（占位符） | 不支持                   | 支持                           |
+| 自动提示       | 支持                     | 不支持                         |
+| JSR303数据校验 | 支持                     | 支持                           |
+
+yml文件怎么自动提示，第一步引入依赖
+
+```xml
+<!--会生成META-INF元数据用于提供idea自动提示配置文件的-->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-configuration-processor</artifactId>
+<!--依赖不会传播-->
+<optional>true</optional>
+</dependency>
+```
+
+第二步，idea--设置--构建，执行，部署--编译器--注解处理器--勾选启用注解处理。
+
+配置文件中的list和数组数据使用`[唱歌,跳舞]`表示，map和对象数据使用`{a:111,b:222}`表示
+
+配置文件占位符
+
+```yml
+user:
+	user-name: 混江龙
+	age: ${random.int(2)} # 可以使用占位符生成随机值,int(2)表示随机数最大2位
+	hobbies: [唱歌，跳舞]
+address:
+	id: 1
+	desc: ${user.user-name}的家在湖北 # 可以使用占位符引用其他配置的值
+```
+
+2-14
