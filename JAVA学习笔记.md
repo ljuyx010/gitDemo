@@ -9046,4 +9046,146 @@ address:
 	desc: ${user.user-name}的家在湖北 # 可以使用占位符引用其他配置的值
 ```
 
-2-14
+### Spring boot的配置和自动配置原理
+
+通用应用配置属性：https://docs.spring.io/spring-boot/appendix/application-properties/index.html
+
+```java
+/*
+* spring boot 应用的入口类
+* 所有的spring boot 应用都需要有一个入口类，入口类的main方法中调用SpringApplication.run方法来启动应用
+* @SpringBootApplication 注解是一个组合注解，它包含了以下几个注解：
+* @Configuration：将类标记为配置类，用于定义bean的配置。
+* @EnableAutoConfiguration：启用自动配置，根据项目的依赖和配置自动配置应用程序。
+* @ComponentScan：扫描指定的包及其子包，将符合条件的类注册为bean。
+* */
+@SpringBootApplication  //SpringBootApplication 注解，实现在下面
+public class HellospringbootApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(HellospringbootApplication.class, args);
+    }
+
+}
+
+@Target({ElementType.TYPE})  // 元注解，确定注解使用范围（ElementType.TYPE 表示使用在类上，ElementType.METHOD 表示使用在方法上）
+@Retention(RetentionPolicy.RUNTIME) // 元注解，确定注解编译范围（RetentionPolicy.RUNTIME 表示会在runtime时编译，可以使用反射获取到）
+@Documented  // 元注解，表示注解信息是否会生成在javadoc文档中
+@Inherited  // 元注解，子类会继承这个注解
+@SpringBootConfiguration //自定义注解，SpringBoot配置类注解
+@EnableAutoConfiguration //开启自动配置类注解：开启自动配置功能
+@ComponentScan(  //扫描包，相当于在spring.xml配置中<context:component-scan>但是并没有指定basepackage，没有指定spring底层会自动扫描当前配置类所在的包
+    excludeFilters = {@Filter(  // excludeFilters排除掉不需要的bean
+    type = FilterType.CUSTOM, // 按照自定义的类排除，可以继承TypeExcludeFilter类重写match方法，自定义实现那些类需要排除。
+    classes = {TypeExcludeFilter.class} //spring 对外提供的扩展类，实现自定义类的排除
+), @Filter(
+    type = FilterType.CUSTOM,
+    classes = {AutoConfigurationExcludeFilter.class} // 排除配置类并且是自动配置类中的其中一个就会被排除掉
+)}
+)
+// SpringBootApplication 注解
+public @interface SpringBootApplication {}
+```
+
+**自动配置类的原理**
+
+jar包中包路径--autoconfigure--类名Properties.class就是自动配置类的配置属性
+
+```java
+package org.springframework.boot.web.server.autoconfigure.servlet;
+// Source code recreated from a .class file by IntelliJ IDEA
+// ServletWebServerConfiguration类的自动配置类示例
+//
+
+@Configuration( // 配置类注解
+    proxyBeanMethods = false // 动态代理false，表示每次访问类的方法都创建一个新的对象，动态代理为true则把对象存入到Ioc容器，每次访问都使用同一个bean，体现bean的单例
+)
+@EnableConfigurationProperties({ServerProperties.class})//启用配置类的属性，通过属性类反射到配置类中
+@Import({BeanPostProcessorsRegistrar.class})
+public class ServletWebServerConfiguration {
+    @Bean
+    ServletWebServerFactoryCustomizer servletWebServerFactoryCustomizer(ServerProperties serverProperties, ObjectProvider<WebListenerRegistrar> webListenerRegistrars, ObjectProvider<CookieSameSiteSupplier> cookieSameSiteSuppliers, ObjectProvider<SslBundles> sslBundles) {
+        return new ServletWebServerFactoryCustomizer(serverProperties, webListenerRegistrars.orderedStream().toList(), cookieSameSiteSuppliers.orderedStream().toList(), (SslBundles)sslBundles.getIfAvailable());
+    }
+
+    @Bean
+    @ConditionalOnProperty( // 条件注解，当server.forward-headers-strategy属性的值等于framework时bean才生效
+        name = {"server.forward-headers-strategy"},
+        havingValue = "framework"
+    )
+    // 判断spring容器是否不存在ForwardedHeaderFilter类，不存在就生效
+    @ConditionalOnMissingFilterBean({ForwardedHeaderFilter.class})
+    FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter(ObjectProvider<ForwardedHeaderFilterCustomizer> customizerProvider) {
+        ForwardedHeaderFilter filter = new ForwardedHeaderFilter();
+        customizerProvider.ifAvailable((customizer) -> customizer.customize(filter));
+        FilterRegistrationBean<ForwardedHeaderFilter> registration = new FilterRegistrationBean(filter, new ServletRegistrationBean[0]);
+        registration.setDispatcherTypes(DispatcherType.REQUEST, new DispatcherType[]{DispatcherType.ASYNC, DispatcherType.ERROR});
+        registration.setOrder(Integer.MIN_VALUE);
+        return registration;
+    }
+
+    static class BeanPostProcessorsRegistrar implements ImportBeanDefinitionRegistrar, BeanFactoryAware {
+        private @Nullable ConfigurableListableBeanFactory beanFactory;
+
+        public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+            if (beanFactory instanceof ConfigurableListableBeanFactory listableBeanFactory) {
+                this.beanFactory = listableBeanFactory;
+            }
+
+        }
+
+        public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+            if (this.beanFactory != null) {
+                this.registerSyntheticBeanIfMissing(this.beanFactory, registry, "webServerFactoryCustomizerBeanPostProcessor", WebServerFactoryCustomizerBeanPostProcessor.class);
+                this.registerSyntheticBeanIfMissing(this.beanFactory, registry, "errorPageRegistrarBeanPostProcessor", ErrorPageRegistrarBeanPostProcessor.class);
+            }
+        }
+
+        private <T> void registerSyntheticBeanIfMissing(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry, String name, Class<T> beanClass) {
+            if (ObjectUtils.isEmpty(beanFactory.getBeanNamesForType(beanClass, true, false))) {
+                RootBeanDefinition beanDefinition = new RootBeanDefinition(beanClass);
+                beanDefinition.setSynthetic(true);
+                registry.registerBeanDefinition(name, beanDefinition);
+            }
+
+        }
+    }
+}
+
+@ConfigurationProperties("server") //配置名称
+public class ServerProperties { //配置文件的所有属性都根据以下属性来配置
+    private @Nullable Integer port;
+    private @Nullable InetAddress address;
+    private @Nullable ForwardHeadersStrategy forwardHeadersStrategy;
+    private @Nullable String serverHeader;
+    private DataSize maxHttpRequestHeaderSize = DataSize.ofKilobytes(8L);
+    private Shutdown shutdown;
+    @NestedConfigurationProperty
+    private @Nullable Ssl ssl;
+    @NestedConfigurationProperty
+    private final Compression compression;
+    private final MimeMappings mimeMappings;
+    @NestedConfigurationProperty
+    private final Http2 http2;
+    private final Servlet servlet;
+    private final Reactive reactive;
+}
+```
+
+### Spring Boot 热部署与日志
+
+ 实现热部署需要以下依赖
+
+```xml
+<!--1.开发工具启动器(可以实现热部署)-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <scope>runtime</scope>
+    <optional>true</optional> <!-- 可选依赖 -->
+</dependency>
+<!--idea 2025版本需要开启以下两个设置，才能使用热部署功能-->
+<!--2.1在idea设置--编译器--勾选自动编译项目-->
+<!--2.2在idea设置--高级设置--编译器--勾选即使开发的营业程序当前正在运行，也允许自动make启动-->
+```
+
