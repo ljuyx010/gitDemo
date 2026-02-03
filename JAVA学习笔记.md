@@ -9189,3 +9189,105 @@ public class ServerProperties { //配置文件的所有属性都根据以下属�
 <!--2.2在idea设置--高级设置--编译器--勾选即使开发的营业程序当前正在运行，也允许自动make启动-->
 ```
 
+**日志框架发展：**
+
+古早时期使用System.out.println("")可以输出追踪，异常try catch信息，输出一些关键变量，但是异常信息输出在控制台，很多用户访问控制台会输出很多信息，导致遇到异常时想去查询时，异常信息会找不到。
+
+1.升级版不使用System.out.println("")输出到控制台，使用自定义logUtil类把异常信息保存到文本中，可以方便查询，但是还是有问题，当项目运行的时间长也用户量越来越多，文本文件会特别大，当日志文件达到1G以上时就很难打开这个文件了。
+
+2.再升级，日志信息按天迭代，2020-01-01.log，按物理大小迭代2020-01-01-20M.log可以暂时解决日志文件过大的问题，但是还会有异常不查看日志就不能发现的问题
+
+3.升级，当用户出现异常loginfo，能不能马上给我发送邮件。
+
+4.能不能记录日志的时候按等级来区分，追踪1 信息 2 调试3 异常4
+
+5.写日志会大量的I/O，能不能异步非阻塞，自由控制格式
+
+开源log4j 受到广大开发者欢迎。出现大量变种log4j-simple ，log4j nop等，
+
+最终由apache基金会收纳
+
+jdk官方看到log4j的影响力，也开发了一个日志框架 jul  java.util.logging
+
+市面上的日志框架非常混乱，一个项目 一个模块一个日志框架，难得统一管理
+
+jdk 开发了日志门面 JCL （jakarta Commons Logging）JCL（不实现日志功能，只整合日志）
+
+jdk的JCL并不好用，log4j脱离了apache，独自开发日志门面 slf4j  通过桥接器和日志框架整合性能比JCL要好，如果使用了JCL也可以通过适配器转到slf4j
+
+apache 也 开发了 log4j2 性能是 log4j 高出好多倍
+
+log4j 也升级了新版本 logbck 性能是 log4j 高出好多倍
+
+| 日志实现                       | 日志门面                     |
+| ------------------------------ | ---------------------------- |
+| log4j 淘汰                     | JCL                          |
+| jul（java.util.logging）和其他 | SLF4J  推荐 spring boot 默认 |
+| log4j2  推荐                   |                              |
+| logback  推荐 spring boot 默认 |                              |
+
+ 记录日志不能直接使用日志实现框架，必须通过日志门面来实现。（异常--日志门面统一收集--日志实现统一记录，如果要更换日志框架可以直接替换一个日志实现框架即可不需要修改日志实现代码）需要依赖日志门面类和日志框架类如果是slf4j还需要依赖日志桥接器类。
+
+```java
+public class Log4jMain{
+    public static void main(String[] args){
+        //slf4j日志门面的LoggerFacrory日志工厂
+        // 1.声明日志记录器
+        Logger logger = LoggerFacrory.getLogger(Log4jMain.class);
+        // 输出错误日志
+        log.error("错误信息");
+    }
+}
+```
+
+1.SpringBoot底层也是使用slf4j+logback的方式进行日志记录
+	a. logback桥接器:logback-classic
+
+2.SpringBoot也把其他的日志都替换成了slf4j;
+	a. log4j 适配器: log4j-over-slf4j
+	b. jul适配器:jul-to-slf4j
+	c. jcl-over-slf4j   spring默认的日志是jcl，为了把spring的日志统一到slf4j
+
+**spring boot 日志使用**
+
+日志级别：可以设置TRACE（跟踪），DEBUG（调试），INFO（信息），WARN（警告），ERROR（异常），FATAL或OFF
+
+```yml
+logging:
+	level:
+		root:"warn"
+		org.springframework.web:"debug"
+		org.hibernate:"error"
+# ymal如果有特殊字符的话用单引号(')包起来才能生效
+```
+
+文件输出：默认情况下，spring boot仅记录到控制台，不写日志文件。如果除了控制台输出还想写日志文件，则需要设置一个logging.file.name或logging.file.path属性
+
+| logging.file.name | logging.file.path | 实例     | 描述                             |
+| ----------------- | ----------------- | -------- | -------------------------------- |
+| 没有              | 没有              |          | 仅控制台输出                     |
+| 指定文件名        | 没有              | my.log   | 写入指定的日志文件               |
+| 没有              | 具体目录          | /var/log | 写入spring.log文件存到指定的目录 |
+
+logging.file.name
+
+- 可以设置文件的名称，如果没有设置路径会默认在项目的相对路径下
+- 还可以指定路径+文件名：D:/log/mylog.log
+
+logging.file.path
+
+- 不可以指定文件名称，必须指定一个物理文件夹路径，会默认使用spring.log的文件名
+
+**日志迭代**
+
+如果使用的是Logback，则可以使用application.properties或application.yam文件微调日志轮播设置。对于所有其他日志记录系统，您需要直接自己配置轮转设置（例如，如果使用Log4J2，则可以添加1og4j.xml文件)。
+
+| 名称                                                 | 描述                                   |
+| ---------------------------------------------------- | -------------------------------------- |
+| logging.logback.rollingpolicy.file-name-pattern      | 归档的文件名                           |
+| logging.logback.rollingpolicy.clean-history-on-start | 如果应在应用程序启动时进行日志归档清理 |
+| logging.logback.rollingpolicy.max-file-size          | 归档前日志文件的最大大小               |
+| logging.logback.rollingpolicy.total-size-cap         | 删除日志档案之前可以使用的最大大小     |
+| logging.logback.rollingpolicy.max-history            | 保留日志存档的天数（默认为7）          |
+
+3-9
