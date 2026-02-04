@@ -9354,6 +9354,73 @@ starter-web场景启动器里面自动添加starter-logging也就是logback的�
 </dependency>
 ```
 
-
+再配置log4j2.xml的配置文件就可以了
 
 - 将logback切换成log4j
+
+1.要将logback的桥接器排除
+
+2.添加log4j的桥接器
+
+```xml
+<dependency>
+	<groupId>org.slf4j</groupId>
+    <artifactId>slf4j-log4j12</artifactId>
+</dependency>
+```
+
+3.配置log4j.Properties的配置文件即可
+
+```properties
+#trace<debug<info<warn<error<fatal
+log4j.rootLogger=trace, stdout
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+1og4j.appender.stdout.layout=org.apache.log4j.Patternlayout
+log4j.appender.stdout.1ayout.ConversionPattern=%d %p [%c] - %m%n
+```
+
+### RestTemplate访问远程服务
+
+RestTemplate是Spring提供的用于访问Rest服务的，RestTemplate提供了多种便捷访问远程Http服务的方法，传统情况下在java代码里访问restful服务，一般使用Apache的HttpClient。不过此种方法使用起来太过繁琐。spring提供了一种简单便捷的模板类来进行操作，这就是
+RestTemplate。使用于微服务架构下  各服务之间的远程调用 （ps:以后使用微服务架构，使用 spring cloud feign 更好，可以解决负载均衡情况下api地址不固定的问题）
+
+```java
+@RestController
+@RequestMapping("/orders")
+public class Orders {
+    //声明RestTemplate
+    private final RestTemplate restTemplate;
+    // 当bean没有无参构造函数的时候，spring将自动拿到有参构造函数，将其参数自动注入
+    @Autowired
+    public Orders(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    // 测试方法
+    @RequestMapping("/test")
+    public String test() {
+        // 需要远程调用orders服务的/test接口
+        Result result = restTemplate.getForObject("http://localhost:8080/orders/test", Result.class);
+        System.out.println(result);
+        return "hello orders";
+    }
+}
+```
+
+| RestFul风格的请求         | RestTemplate的方法                                           |
+| ------------------------- | ------------------------------------------------------------ |
+| DELETE                    | delete                                                       |
+| GET                       | getForObject 按照指定class返回对象<br />getForEntity返回对象为ResponseEntity对象，包含了响应中的一些重要信息，比如响应头，响应状态码，响应体等 |
+| POST                      | postForLocation<br />PostForObject                           |
+| PUT                       | put                                                          |
+| HEAD                      | headForHeaders                                               |
+| OPTIONS                   | optionsForAllow                                              |
+| any(支持任何请求方法类型) | exchange<br />execute                                        |
+
+RestTemplate 底层发送的数据默认转换成json 数据，所以在接收接口中，要使用@ResponseBody来注解接收参数。
+
+WebClient 也可以调用远程服务，那WebClient和RestTemplate有什么区别：
+
+webclient 依赖webflux（无阻塞，响应式），webclient请求远程服务器是无阻塞的，响应式的（即不等待返回结果直接继续往下执行），而RestTemplate是阻塞的（需要等待响应结果，如果响应报错则不继续往下执行）。
+
+4-3
