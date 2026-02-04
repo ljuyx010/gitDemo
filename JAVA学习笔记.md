@@ -9259,6 +9259,9 @@ logging:
 		org.springframework.web:"debug"
 		org.hibernate:"error"
 # ymal如果有特殊字符的话用单引号(')包起来才能生效
+spring:
+	profiles:
+		active:dev # 设置当前spring的开发环境
 ```
 
 文件输出：默认情况下，spring boot仅记录到控制台，不写日志文件。如果除了控制台输出还想写日志文件，则需要设置一个logging.file.name或logging.file.path属性
@@ -9272,7 +9275,7 @@ logging:
 logging.file.name
 
 - 可以设置文件的名称，如果没有设置路径会默认在项目的相对路径下
-- 还可以指定路径+文件名：D:/log/mylog.log
+- 还可以指定路径+文件名：D:/logs/mylog.log
 
 logging.file.path
 
@@ -9290,4 +9293,67 @@ logging.file.path
 | logging.logback.rollingpolicy.total-size-cap         | 删除日志档案之前可以使用的最大大小     |
 | logging.logback.rollingpolicy.max-history            | 保留日志存档的天数（默认为7）          |
 
-3-9
+**自定义日志配置文件**
+
+可以通过在类路径中包含日志配置文件来激活各种日志记录系统或使用logging.config
+
+| 日志系统                 | 配置文件                                        |
+| ------------------------ | ----------------------------------------------- |
+| Logback                  | logback-spring.xml，logback.xml，logback.groovy |
+| Log4j2                   | log4j2-srping.xml或log4j2.xml                   |
+| JDK（java Util Logging） | logging.properties                              |
+
+注意：如果使用自定义配置文件，会使全局配置的日志配置失效
+
+结合SpringBoot提供Profile来控制日志的生效
+
+```xml
+<!--可以应用Springboot全局配置文件中的配置项-->
+<springProperty scope="context" name="dateformat" source="logging.pattern.dateformat（springboot全局配置的属性）" defaultValue="-yyyy-MM-dd HH:mm:ss.SSS" />
+<!--springProfile可以根据不同开发环境配置不同的日志配置此功能是spring独有的，必须配置到logback-spring.xml的文件中不能配置到logback.xml中-->
+<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+        <springProfile name="dev">
+        <!--dev开发环境下的日志配置-->
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{100} ==== %msg%n</pattern>
+    	</springProfile>
+    	<springProfile name="!dev">
+        <!--非dev开发环境下的日志配置  ${dateformat} 引用自定义日期格式配置-->
+        <pattern>%d{${dateformat}} [%thread] %-5level %logger{100} ++++ %msg%n</pattern>
+    	</springProfile>
+    </encoder>
+</appender>
+
+```
+
+**切换日志框架**
+
+- 将logback切换成log4j2
+
+```xml
+<!--log4j2场景启动器-->
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-log4j2</artifactId>
+</dependency>
+```
+
+starter-web场景启动器里面自动添加starter-logging也就是logback的依赖，当要使用log4j2的时候，因为slf4j只能有一个桥接器生效，所以就需要排除掉logback的桥接器或者logback的依赖
+
+```xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+    <!--排除依赖-->
+        <exclusion><!--排除掉logback的场景启动器-->
+        	<artifactId>spring-boot-starter-logging</artifactId>
+            <groupId>org.springframework.boot</groupId>
+        </exclusion>
+    </exclusions>
+</dependency>
+```
+
+
+
+- 将logback切换成log4j
