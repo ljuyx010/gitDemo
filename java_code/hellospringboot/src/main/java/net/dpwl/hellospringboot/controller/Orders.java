@@ -17,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 public class Orders {
     //声明RestTemplate
     private final RestTemplate restTemplate;
+
     // 当bean没有无参构造函数的时候，spring将自动拿到有参构造函数，将其参数自动注入
     @Autowired
     public Orders(RestTemplate restTemplate) {
@@ -27,7 +28,7 @@ public class Orders {
     @RequestMapping("/test")
     public String test() {
         // 需要远程调用orders服务的/test接口
-        Result result = restTemplate.getForObject("http://localhost:8080/orders/test", Result.class);
+        Result result = restTemplate.getForObject("http://localhost:8080/hello/world", Result.class);
         System.out.println(result);
         return "hello orders";
     }

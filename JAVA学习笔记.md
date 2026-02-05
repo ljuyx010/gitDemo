@@ -9423,4 +9423,377 @@ WebClient 也可以调用远程服务，那WebClient和RestTemplate有什么区�
 
 webclient 依赖webflux（无阻塞，响应式），webclient请求远程服务器是无阻塞的，响应式的（即不等待返回结果直接继续往下执行），而RestTemplate是阻塞的（需要等待响应结果，如果响应报错则不继续往下执行）。
 
-4-3
+### MockMvc测试http请求
+
+MockMvc是由spring-test包提供，实现了对Http请求的模拟，能够直接使用网络的形式，转换到Controller的调用，使得测试速度快、不依赖网络环境。同时提供了一套验证的工具，结果的验证十分方便。
+
+SpringBoot中使用：
+编写测试类。实例化MockMvc有两种形式，一种是使用StandaloneMockMvcBuilder，另外一种是使用DefaultMockMvcBuilder。
+测试类及初始化MockMvc初始化：
+
+```java
+@SpringBootTest  // 启动spring boot 应用
+@AutoConfigureMockMvc // 专门用于做mockmvc的，由spring-test提供，依赖junit5
+public class MockMvcTests {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void testMockMvc() throws Exception {
+        // 发起一个get请求，请求路径为/hello，不依赖网络，直接把请求映射到Controller
+        // 不依赖web服务，不需要启动web应用
+        mockMvc.perform(
+                // 发送get请求
+                MockMvcRequestBuilders.get("/hello/world")
+                .accept(MediaType.APPLICATION_JSON) //设置相应的文本类型
+                // .param(name,value) 添加请求参数?name=value
+           )
+                // 响应断言 状态码为200 执行andDo内的操作
+                .andExpect(status().isOk())
+               // 响应断言 响应体中的data.id为1 执行andDo内的操作,如果不是1，会报错
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value(1))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+}
+```
+
+### 通过Swagger调用接口
+
+相信无论是前端还是后端开发，都或多或少地被接口文档折磨过。前端经常抱怨后端给的接口文档与实际情况不一致。后端又党得编写及维护接口文档会耗费不少精力，经常来不及更新。其实无论是前端调用后端，还是后端调用后端，都期望有一个好的接口文档。但是这个接口文档对于程序员来说，就跟注释一样，经常会抱怨别人写的代码没有写注释，然而自己写起代码起来，最讨厌的，也是写注释。所以仅仅只通过强制来规范大家是不够的，随着时间推移，版本迭代，接口文档往往很容易就跟不上代码了。
+
+SpringBoot整合Swagger2.X
+
+1.添加依赖
+
+```xml
+<!--swagger2的依赖
+swagger 是一系列对Rest接口的描述和UI展示的规范（json）
+springfox 整合springmvc和swagger 扫描mvc上的注解转换成符合Swagger的规范的json文件
+-->
+<dependency>
+	<groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.9.2</version>
+</dependency>
+<dependency>
+	<groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.9.2</version>
+</dependency>
+<!--  兼容Spring Boot 4.x 使用springdoc-openapi-->
+<dependency>
+    <groupId>org.springdoc</groupId>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>2.5.0</version>
+</dependency>
+```
+
+2.添加swagger配置类
+
+```java
+package net.dpwl.hellospringboot.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.Contact;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/5 14:36
+ */
+@Configuration
+@EnableSwagger2  // 开启Swagger2注解
+public class SwaggerConfig {
+    // 配置Swagger2的Bean实例,用来告诉springfox怎么去生成Swagger所需要的规范数据
+    @Bean
+    public Docket createRestApi() {
+        return new Docket(DocumentationType.SWAGGER_2) // 生成swagger2规范的文档
+                .pathMapping("/")  // 设置那些接口会映射到swagger文档中
+                .select()  // 接口选择器
+                // 告诉springfox哪些包下的类会被包含到文档中
+                .apis(RequestHandlerSelectors.basePackage("net.dpwl.hellospringboot.controller"))
+                // 告诉springfox哪些路径会被包含到文档中，any()是所有的路径
+                .paths(PathSelectors.any())
+                // 描述文档的主体信息
+                .build().apiInfo(
+                        new ApiInfoBuilder()
+                                .title("Springboot整合swagger")
+                                .description("这是一个基于springboot整合swagger，详细信息...")
+                                .version("1.0")
+                                .license("MIT")
+                                .licenseUrl("https://mit-license.org/")
+                                .contact(new Contact("混江龙", "https://www.dpwl.net/", "dpwl@dpwl.net"))
+                                .build()
+                );
+    }
+}
+
+/**
+ * OpenAPI配置类（替代旧的SwaggerConfig）
+ * 使用springdoc-openapi与Spring Boot 4.x兼容
+ */
+package net.dpwl.hellospringboot.config;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+
+@Configuration
+public class OpenAPIConfig {
+
+    @Bean
+    public OpenAPI createOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Spring Boot OpenAPI")
+                        .description("这是一个基于Spring Boot整合OpenAPI 3.0的API文档")
+                        .version("1.0")
+                        .license(new License()
+                                .name("MIT License")
+                                .url("https://mit-license.org/")
+                        )
+                        .contact(new Contact()
+                                .name("混江龙")
+                                .url("https://www.dpwl.net/")
+                                .email("dpwl@dpwl.net")
+                        )
+                );
+    }
+}
+```
+
+Swagger2和OpenAPI注解整体说明
+[OpenAPI3常用注解](https://blog.csdn.net/jiabao0520/article/details/142769375)
+
+用于**Controller**类上
+
+| swagger注解 | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| @Api        | 对请求类的说明                                               |
+| OpenAPI注解 | 说明                                                         |
+| @Tag        | 用于对接口进行分类，方便在文档中分组显示。  `name`：标签名称。 `description`：标签描述。 |
+
+用于**方法**上（说明参数的含义）
+
+| OpenAPI注解 | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| @Operation  | 用于描述一个API 操作，通常应用于控制器方法上。`summary`：接口的简要描述。 `description`：接口的详细描述。 `tags`：接口所属的标签组。 `responses`：定义可能的响应结果及其状态码。 |
+
+| swagger注解                           | 说明                                                       |
+| ------------------------------------- | ---------------------------------------------------------- |
+| @ApiOperation                         | 方法的说明                                                 |
+| @ApilmplicitParams、@ApilmplicitParam | 方法的参数的说明，@ApilmplicitParams用于指定单个参数的说明 |
+
+| OpenAPI注解 | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| @Parameter  | 用于描述请求中的单个参数。`name`：参数名称。 `description`：参数描述。 `required`：是否为必填项。 `in`：参数的位置（如 PATH、QUERY、HEADER 等） |
+| @Parameters | 用于定义多个参数的注解容器，`@Parameters`包含多个`@Parameter`注解。 |
+
+用于**方法**上面（**返回参数**或对象的说明）
+
+| swagger注解                 | 说明                                                  |
+| --------------------------- | ----------------------------------------------------- |
+| @ApiResponses、@ApiResponse | 方法返回值的说明，@ApiResponses用于指定单个参数的说明 |
+
+| OpenAPI注解  | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| @ApiResponse | 用于描述单个 API 响应。通常和 `@Operation` 一起使用。  `responseCode`：HTTP 状态码。 `description`：响应描述。 |
+
+**对象类**：
+
+| swagger注解       | 说明                                       |
+| ----------------- | ------------------------------------------ |
+| @ApiModel         | 用在javaBean类上，说明JavaBean的用途       |
+| @ApiModelProperty | 用在JavaBean类的属性上面，说明次属性的含义 |
+
+| OpenAPI注解 | 说明                                                         |
+| ----------- | ------------------------------------------------------------ |
+| @Schema     | 用于描述对象模型和字段，通常用于实体类或 DTO 类上。  `description`：字段描述。 `example`：字段的示例值。 `required`：字段是否为必填项。 `type`：字段的数据类型。 |
+
+### Spring MVC自动配置原理
+
+SpringBoot为SpringMVC提供了自动配置，可与大多数应用程序完美配合。
+自动配置在Spring的默认值之上添加了以下功能：
+
+- 包含ContentNegotiatingViewResolver和BeanNameViewResolver。
+  ViewResolver 都是Spring MVC内置的视图解析器
+
+  ContentNegotiatingViewResolver 这个视图解析器并不会直接解析视图，而是委派给其他视图解析器进行解析（相当于一个中介）。所有视图解析器，都会根据返回的视图名称进行解析视图resolveViewName
+  BeanNameViewResolver 会根据handler方法返回的视图名称，去Ioc容器中找到对应的Bean（必须是要实现了View接口的Bean），来解析视图（使用场景，可以定义出excel，pdf的视图，把需要导出的数据交由视图去生成相应的文件）。
+
+  ```java
+  package net.dpwl.hellospringboot.view;
+  
+  import jakarta.servlet.http.HttpServletRequest;
+  import jakarta.servlet.http.HttpServletResponse;
+  import org.apache.poi.ss.usermodel.*;
+  import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+  import org.springframework.stereotype.Component;
+  import org.springframework.web.servlet.View;
+  
+  import java.io.IOException;
+  import java.io.OutputStream;
+  import java.util.List;
+  import java.util.Map;
+  
+  /**
+   * Excel视图类 - 使用纯Apache POI实现（替代已弃用的AbstractXlsxView）
+   * 
+   * @author 混江龙
+   * @version 1.0
+   * @time 2026/2/5 17:02
+   */
+  @Component
+  public class ExcelView implements View {
+  
+      @Override
+      public String getContentType() {
+          // 返回Excel文件的MIME类型
+          return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      }
+  
+      @Override
+      public void render(Map<String, ?> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+          // 1. 设置响应头信息
+          response.setContentType(getContentType());
+          response.setHeader("Content-Disposition", "attachment; filename=orders_export.xlsx");
+          
+          // 2. 从model中获取Orders数据列表
+          List<net.dpwl.hellospringboot.entity.Orders> ordersList = (List<net.dpwl.hellospringboot.entity.Orders>) model.get("ordersList");
+          
+          // 3. 创建Excel工作簿（使用XSSFWorkbook生成.xlsx格式）
+          try (Workbook workbook = new XSSFWorkbook();
+               OutputStream outputStream = response.getOutputStream()) {
+              
+              // 4. 创建Excel工作表
+              Sheet sheet = workbook.createSheet("订单数据");
+              
+              // 5. 设置列宽
+              sheet.setColumnWidth(0, 20 * 256); // ID列
+              sheet.setColumnWidth(1, 30 * 256); // 订单号列
+              sheet.setColumnWidth(2, 30 * 256); // 客户名列
+              sheet.setColumnWidth(3, 20 * 256); // 金额列
+              sheet.setColumnWidth(4, 20 * 256); // 状态列
+              sheet.setColumnWidth(5, 30 * 256); // 创建时间列
+              
+              // 6. 创建表头行
+              Row headerRow = sheet.createRow(0);
+              
+              // 7. 创建单元格样式
+              CellStyle headerStyle = createHeaderStyle(workbook);
+              CellStyle dataStyle = createDataStyle(workbook);
+              
+              // 8. 设置表头内容
+              String[] headers = {"ID", "订单号", "客户名", "金额", "状态", "创建时间"};
+              for (int i = 0; i < headers.length; i++) {
+                  Cell cell = headerRow.createCell(i);
+                  cell.setCellValue(headers[i]);
+                  cell.setCellStyle(headerStyle);
+              }
+              
+              // 9. 填充数据行
+              int rowNum = 1;
+              for (net.dpwl.hellospringboot.entity.Orders order : ordersList) {
+                  Row dataRow = sheet.createRow(rowNum++);
+                  
+                  // ID
+                  Cell idCell = dataRow.createCell(0);
+                  idCell.setCellValue(order.getId());
+                  idCell.setCellStyle(dataStyle);
+                  
+                  // 订单号
+                  Cell orderNumberCell = dataRow.createCell(1);
+                  orderNumberCell.setCellValue(order.getOrderNumber());
+                  orderNumberCell.setCellStyle(dataStyle);
+                  
+                  // 客户名
+                  Cell customerNameCell = dataRow.createCell(2);
+                  customerNameCell.setCellValue(order.getCustomerName());
+                  customerNameCell.setCellStyle(dataStyle);
+                  
+                  // 金额
+                  Cell amountCell = dataRow.createCell(3);
+                  amountCell.setCellValue(order.getAmount());
+                  amountCell.setCellStyle(dataStyle);
+                  
+                  // 状态
+                  Cell statusCell = dataRow.createCell(4);
+                  statusCell.setCellValue(order.getStatus());
+                  statusCell.setCellStyle(dataStyle);
+                  
+                  // 创建时间
+                  Cell createTimeCell = dataRow.createCell(5);
+                  createTimeCell.setCellValue(order.getCreateTime());
+                  createTimeCell.setCellStyle(dataStyle);
+              }
+              
+              // 10. 将工作簿写入输出流
+              workbook.write(outputStream);
+              outputStream.flush();
+          } catch (IOException e) {
+              // 处理异常
+              throw new RuntimeException("Excel导出失败", e);
+          }
+      }
+      
+      /**
+       * 创建表头样式
+       */
+      private CellStyle createHeaderStyle(Workbook workbook) {
+          CellStyle style = workbook.createCellStyle();
+          Font font = workbook.createFont();
+          font.setBold(true);
+          font.setFontHeightInPoints((short) 12);
+          style.setFont(font);
+          style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+          style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+          style.setBorderBottom(BorderStyle.THIN);
+          style.setBorderLeft(BorderStyle.THIN);
+          style.setBorderRight(BorderStyle.THIN);
+          style.setBorderTop(BorderStyle.THIN);
+          style.setAlignment(HorizontalAlignment.CENTER);
+          return style;
+      }
+      
+      /**
+       * 创建数据行样式
+       */
+      private CellStyle createDataStyle(Workbook workbook) {
+          CellStyle style = workbook.createCellStyle();
+          style.setBorderBottom(BorderStyle.THIN);
+          style.setBorderLeft(BorderStyle.THIN);
+          style.setBorderRight(BorderStyle.THIN);
+          style.setBorderTop(BorderStyle.THIN);
+          return style;
+      }
+  }
+  ```
+
+  
+
+- 支持提供静态资源，包括对WebJars的支持。
+  以前要访问jpg，css，js等这些静态资源文件，需要早web.xml配置，在spring boot不需要配置，只需要放在约定的文件夹中就可以（约定大于配置）
+  WebJars：就是将静态资源放在jar包中进行访问，安装了webjars后当我们访问`/webjars/*`的路径时就会自动到`META-INF/resources/webjars`的路径下去寻找资源
+
+- 自动注册`converter`，`GenericConverter`和`Formatter` Bean类。
+
+- 支持HttpMessageConverters。
+
+- 自动注册MessageCodesResolver。
+
+- 静态index.html支持。
+
+- 自动使用`configurableWebBindingInitializer`bean。
+
+4-6
