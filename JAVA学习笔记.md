@@ -9786,14 +9786,215 @@ SpringBoot为SpringMVC提供了自动配置，可与大多数应用程序完美�
   以前要访问jpg，css，js等这些静态资源文件，需要早web.xml配置，在spring boot不需要配置，只需要放在约定的文件夹中就可以（约定大于配置）
   WebJars：就是将静态资源放在jar包中进行访问，安装了webjars后当我们访问`/webjars/*`的路径时就会自动到`META-INF/resources/webjars`的路径下去寻找资源
 
-- 自动注册`converter`，`GenericConverter`和`Formatter` Bean类。
+  ```java
+  // 访问的静态资源的原理，默认是从以下几个目录中去匹配静态资源
+  // 访问http://localhost:8080/my.jpg 默认就在下面几个目录中去找my.jpg文件
+  {"classpath:/META-INF/resources/","classpath:/resources/","classpath:/static/","classpath:/public/"}
+  ```
+  
+- 自动注册`converter`（转换器），`GenericConverter`（类型转换器）和`Formatter` （格式化器）Bean类。
 
-- 支持HttpMessageConverters。
+- 支持HttpMessageConverters。（负责http请求和响应的报文处理，把http传入json自动转成java对象，把响应的对象转成json）
 
-- 自动注册MessageCodesResolver。
+- 自动注册MessageCodesResolver（修改异常下 错误代码的格式 ，默认格式是`errorCode+"."+object name+"."+field`可以通过`spring.mvc.message-codes-resolver-format=postfix_error_code`改成`object name+"."+field+"."+errorCode`）。
 
-- 静态index.html支持。
+- 静态index.html支持。在spring boot中可以直接返回html的视图是因为WebMvcAutoConfiguration配置类配置自动使用`ConfigurableWebBindingInitializer`Bean。`InternalResourceViewResolver`支持解析jsp，html等视图解析器，所以就可以通过配置文件中完成
 
-- 自动使用`configurableWebBindingInitializer`bean。
+  `spring.mvc.view.prefix=/pages/` 设置视图的前缀
+  `spring.mvc.view.suffix=.html` 设置视图的后缀
 
-4-6
+- 自动使用`ConfigurableWebBindingInitializer`bean。把formdata的数据转成java 对象。
+
+### 定制SpringMvc的自动配置
+
+SpringMVC的自动配置类：WebMvcAutoConfiguration
+
+1. 在大多数情况，springboot在自动配置中标记了很多`@ConditionalOnMissingBean({XXXXXX.class})`（意思就是如果容器中没有@ConditionalOnMissingBean包含的Bean，当前的@Bean才会生效。）只需要在自己的配置类中配置对应的一个@Bean就可以覆盖默认自动配置。
+2. 通过WebMvcConfigurer进行扩展
+
+**通过WebMvcConfigurer扩展拦截器Interceptor和其他的一些功能**
+
+1. 实现拦截器方法
+
+   ```java
+   package net.dpwl.hellospringboot.interceptors;
+   
+   import jakarta.servlet.http.HttpServletRequest;
+   import jakarta.servlet.http.HttpServletResponse;
+   import org.jspecify.annotations.Nullable;
+   import org.springframework.web.servlet.HandlerInterceptor;
+   import org.springframework.web.servlet.ModelAndView;
+   
+   import java.time.Duration;
+   import java.time.LocalDateTime;
+   
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/6 15:53
+    * 自定义一个拦截器，用来记录请求的处理时间
+    */
+   public class TimeInterceptor implements HandlerInterceptor {
+       LocalDateTime begin;
+       // 前置方法，在控制器方法执行之前调用
+       /**
+        * 前置方法，在控制器方法执行之前调用
+        * @param request 请求对象
+        * @param response 响应对象
+        * @param handler 处理器对象
+        * @return true 表示继续处理，false 表示中断处理
+        * @throws Exception 可能抛出的异常
+        */
+       @Override
+       public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+           // 记录请求开始的时间
+           begin = LocalDateTime.now();
+           // 把 begin 放到请求的属性中，方便后续的拦截器和控制器使用
+           request.setAttribute("begin", begin);
+           return true;
+       }
+   
+   
+       // 后置方法，在控制器方法执行之后调用
+       /**
+        * 后置方法，在控制器方法执行之后调用
+        * @param request 请求对象
+        * @param response 响应对象
+        * @param handler 处理器对象
+        * @param modelAndView 模型和视图对象
+        * @throws Exception 可能抛出的异常
+        */
+       @Override
+       public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable ModelAndView modelAndView) throws Exception {
+           HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
+       }
+   
+       // 完成方法，在控制器方法执行完成之后调用
+       /**
+        * 完成方法，在控制器方法执行完成之后调用
+        * @param request 请求对象
+        * @param response 响应对象
+        * @param handler 处理器对象
+        * @param ex 异常对象
+        * @throws Exception 可能抛出的异常
+        */
+       @Override
+       public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {
+           // 记录请求结束的时间
+           LocalDateTime endTime = LocalDateTime.now();
+           // 计算请求的处理时间(toMillis毫秒)
+           long processingTime = Duration.between(begin, endTime).toMillis();
+           // 打印请求的处理时间
+           System.out.println("请求 " + request.getRequestURI() + " 的处理时间为 " + processingTime + " 毫秒");
+       }
+   }
+   ```
+
+   
+
+2. 把拦截器的方法添加到自定义自动配置类中
+
+   ```java
+   package net.dpwl.hellospringboot.config;
+   
+   import net.dpwl.hellospringboot.interceptors.TimeInterceptor;
+   import org.springframework.context.annotation.Configuration;
+   import org.springframework.http.HttpStatus;
+   import org.springframework.web.servlet.config.annotation.CorsRegistry;
+   import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+   import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+   import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+   
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/6 16:11
+    */
+   @Configuration
+   public class MyWebMvcConfigurer implements WebMvcConfigurer {
+   
+       /**
+       *   添加视图控制器
+       *   作用是：注册简单的视图控制器，避免为简单页面创建专门的控制器类*
+        *   它用于将 URL 路径直接映射到视图名称，而不需要经过业务逻辑处理。
+        */
+       @Override
+       public void addViewControllers(ViewControllerRegistry registry) {
+           // 将根路径映射到index页面
+           registry.addViewController("/").setViewName("index");
+           // 永久重定向（301）
+           registry.addRedirectViewController("/old-url", "/new-url")
+                   .setStatusCode(HttpStatus.MOVED_PERMANENTLY);
+   
+           // 临时重定向（302）
+           registry.addRedirectViewController("/temp", "/new-location")
+                   .setStatusCode(HttpStatus.FOUND);
+   
+           // 重定向并保留查询参数
+           registry.addRedirectViewController("/search", "/new-search")
+                   .setKeepQueryParams(true);
+       }
+   
+       /**
+        * 配置拦截器
+        * @param registry 拦截器注册器
+        */
+       @Override
+       public void addInterceptors(InterceptorRegistry registry) {
+           // 添加时间拦截器，拦截所有请求
+           registry.addInterceptor(new TimeInterceptor()) //添加拦截器TimeInterceptor
+                   .addPathPatterns("/**")  // 设置拦截映射规则，/**拦截所有
+                   .excludePathPatterns("/static/**"); // 排除拦截映射规则，静态目录下的请求全排除
+       }
+   
+       /**
+        *  支持跨域请求处理
+        *  全局CORS配置
+        *  在方法上添加@CrossOrigin("http//localhost:8081")注解，可以指定单个方法支持跨域请求(不配置url就所有来源都能跨域请求)
+        * */
+       @Override
+       public void addCorsMappings(CorsRegistry registry) {
+           registry.addMapping("/**")  // 映射服务器中那些http接口运行跨域请求
+               .allowedOrigins("http//localhost:8081")  // 配置那些来源有权限跨域请求,避免跨域攻击    
+               .allowedMethods("GET", "POST", "PUT", "DELETE"); // 配置允许跨域请求的请求方法
+       }
+   }
+   ```
+
+   
+
+**WebMvcConfigurer原理**
+实现WebMvcConfigurer接口可以扩展MVC实现，有保留Springboot的自动配置
+
+1. 在WebMvcConfigurer中也有一个实现了WebMvcConfigurer的配置类`WebMvcAutoConfigurationAdapter`它也是利用这种方式去进行扩展，所以我们通过查看这个类发现它帮我们实现了其他不常用的方法，帮助我们进行自动配置，我们只需要定制（拦截器，视图控制器，CORS在开发中需要额外定制的功能）
+
+2. WebMvcConfigurer的实现类`WebMvcAutoConfigurationAdapter`上有`@Import({EnableWebMvcConfiguration.class})`这个注解导入了EnableWebMvcConfiguration类，EnableWebMvcConfiguration类的父类DelegatingWebMvcConfiguration类有一个setConfigurers方法
+
+   ```java
+   // 该方法上的注解@Autowired，它的参数configurers在IOC容器中就会自动注入 
+   // configurers是实现了WebMvcConfigurer接口的所有Bean都会被自动注入到configurers变量中的list中，并添加到addWebMvcConfigurers委派器
+   @Autowired(
+           required = false
+       )
+       public void setConfigurers(List<WebMvcConfigurer> configurers) {
+           if (!CollectionUtils.isEmpty(configurers)) {
+               this.configurers.addWebMvcConfigurers(configurers);
+           }
+   
+       }
+   // 添加到delegates委派器中
+   public void addWebMvcConfigurers(List<WebMvcConfigurer> configurers) {
+           if (!CollectionUtils.isEmpty(configurers)) {
+               this.delegates.addAll(configurers);
+           }
+   
+       }
+   
+   // 底层调用WebMvcConfigurer对应的方法时，就是去拿到之前注入到delegates的WebMvcConfigurer，依次调用
+   ```
+
+   当添加了@EnableWebMvc就不会使用springMVC的自动配置类的默认配置了，为什么呢？
+
+   因为在@EnableWebMvc注解中引入了DelegatingWebMvcConfiguration类，而DelegatingWebMvcConfiguration的父类是WebMvcConfigurationSupport类，但是springMVC的自动配置类上有注解`@ConditionalOnMissingBean({WebMvcConfigurationSupport.class})`不能有WebMvcConfigurationSupport类，如果有该Bean就不生效，所以当配置类上存在@EnableWebMvc注解是，springmvc的自动配置类的默认配置就不会再生效了。
+
+4-7-6
