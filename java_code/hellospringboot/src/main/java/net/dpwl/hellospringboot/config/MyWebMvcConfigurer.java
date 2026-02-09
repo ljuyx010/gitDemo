@@ -7,6 +7,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 
 /**
  * @author 混江龙
@@ -48,6 +49,9 @@ public class MyWebMvcConfigurer implements WebMvcConfigurer {
         registry.addInterceptor(new TimeInterceptor()) //添加拦截器TimeInterceptor
                 .addPathPatterns("/**")  // 设置拦截映射规则，/**拦截所有
                 .excludePathPatterns("/static/**"); // 排除拦截映射规则，静态目录下的请求全排除
+        // 添加国际化拦截器，拦截所有请求，根据MyMvcAutoConfiguration自定义localeResolver方法获取cookies的locale参数，来切换语言
+        registry.addInterceptor(new LocaleChangeInterceptor())
+                .excludePathPatterns("/**");
     }
 
     /**
@@ -61,4 +65,6 @@ public class MyWebMvcConfigurer implements WebMvcConfigurer {
                 .allowedOrigins("http//localhost:8081")  // 配置那些来源有权限跨域请求,避免跨域攻击
                 .allowedMethods("GET", "POST", "PUT", "DELETE"); // 配置允许跨域请求的请求方法
     }
+
+
 }

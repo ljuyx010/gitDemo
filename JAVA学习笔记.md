@@ -9997,4 +9997,174 @@ SpringMVC的自动配置类：WebMvcAutoConfiguration
 
    因为在@EnableWebMvc注解中引入了DelegatingWebMvcConfiguration类，而DelegatingWebMvcConfiguration的父类是WebMvcConfigurationSupport类，但是springMVC的自动配置类上有注解`@ConditionalOnMissingBean({WebMvcConfigurationSupport.class})`不能有WebMvcConfigurationSupport类，如果有该Bean就不生效，所以当配置类上存在@EnableWebMvc注解是，springmvc的自动配置类的默认配置就不会再生效了。
 
-4-7-6
+1. Json处理
+
+   - Gson
+   - Jackson
+   - JSON-B
+
+   Jackson是spring boot默认使用的json库
+
+   **Jackson的使用**
+
+   @jsonIgnore 进行排除json序列化，将它标注在属性上将不会进行json格式化。
+   @JsonFormat(patter="yyyy-MM-dd hh:mm:ss",locale="zh") 进行日期格式
+
+   @JsonInclude(JsonInclude.Include.NON_NULL) 属性的值为null时不进行序列化
+
+   @JsonProperty("别名")  设置属性的别名
+
+   spring boot 还提供了`@JacksonComponent`来根据自己的业务需求进行json的序列化和反序列化
+
+   ```java
+   package net.dpwl.hellospringboot.config;
+   
+   import com.fasterxml.jackson.core.JacksonException;
+   import com.fasterxml.jackson.core.JsonGenerator;
+   import com.fasterxml.jackson.core.JsonParser;
+   import com.fasterxml.jackson.databind.*;
+   import net.dpwl.hellospringboot.entity.User;
+   import org.springframework.boot.jackson.JacksonComponent;
+   
+   import java.io.IOException;
+   
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/9 14:11
+    */
+   @JacksonComponent //springboot 3中是使用@JsonComponent
+   public class UserJsonCustom {
+       public static class Serializer extends JsonSerializer<User> {
+           // 自定义对User对象进行序列化
+           @Override
+           public void serialize(User user, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+               jsonGenerator.writeObjectField("id", user.getId());  // 序列化id为user对象的getId()的值
+               jsonGenerator.writeObjectField("name", "其他表的查询结果"); // 可以根据业务需求自定义pojo对象的值，比如其他数据库的查询结果
+               /*jsonGenerator.writeFieldName("password"); 单独写key
+               jsonGenerator.writeObject(user.getPassword()); 单独写value
+               */
+               // 1. 一次查不出完整的数据返回给客户端，需要根据需求去做一些个性化调整
+               // 2. 根据不同的权限给他返回不同的序列化数据
+           }
+       }
+   
+       public static class Deserializer extends JsonDeserializer<User> {
+           // 对Json数据进行反序列化为User对象
+           @Override
+           public User deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
+               User user = new User();
+               // 这里可以编写自定义的反序列化逻辑
+               JsonNode node = jsonParser.getCodec().readTree(jsonParser); // 获取json数据的数据节点
+               user.setId(node.findValue("id").asInt()); //从数据节点中找到id，并转成Int，赋值给user对象的id
+               return user;
+           }
+       }
+   }
+   ```
+
+2. 国际化
+   spring boot实现国际化的步骤
+   1.添加国际化资源文件
+   2.配置messageResource 设置国际化资源文件，spring boot提供了MessageSourceAutoConfiguration配置类，所以，我们不需要去单独配置了
+
+   ```java
+   @AutoConfiguration
+   //ConditionalOnMissingBean意思是如果自己配置了@Bean名字叫messageSource，就会使用自定义的
+   @ConditionalOnMissingBean(
+       name = {"messageSource"},
+       search = SearchStrategy.CURRENT
+   )
+   @AutoConfigureOrder(Integer.MIN_VALUE)
+   // Conditional自定义条件匹配，会传入一个实现了Condition接口的类ResourceBundleCondition 会重新matches方法，自定义匹配规则，如果该方法返回true就匹配成功（没有配置spring.messages.basename配置项，也没有默认的messages国际化资源目录，所以会匹配不成功）
+   @Conditional({ResourceBundleCondition.class})
+   @EnableConfigurationProperties({MessageSourceProperties.class})
+   @ImportRuntimeHints({MessageSourceRuntimeHints.class})
+   public final class MessageSourceAutoConfiguration {
+       ....
+   }
+   ```
+
+   如果要让MessageSourceAutoConfiguration自动配置类生效，必须保证在类路径下的messages文件夹中有国际化的资源文件或者自己配置spring.messages.basename告诉资源文件的位置，只要找到了国际化的资源文件，自动配置类就会生效。帮我们配置一个messageResource.
+
+   3.需要去解析请求头中的accept-language 或者url参数中的local=
+
+   其实WebMvcAutoConfiguration类已经提供了一个LocaleResolver方法获取本地语言
+   4.要将本地语言进行缓存
+
+     a.覆盖原有localResolver因为自动配置类中的localResolver只会从accept-language中解析
+
+   ```java
+   @Bean
+       public LocaleResolver localeResolver() {
+           CookieLocaleResolver localeResolver = new CookieLocaleResolver();
+   //        localeResolver.setCookieName("LANG_COOKIE"); spring boot 4 不能设置cookie的名称了
+           localeResolver.setCookieMaxAge(Duration.ofDays(60 * 60 * 24 * 30)); // 30天
+           localeResolver.setCookiePath("/");
+           return localeResolver;
+       }
+   ```
+
+   b. 把国际化拦截器添加到自定义拦截器，实现国际化
+
+   ```java
+   @Override
+       public void addInterceptors(InterceptorRegistry registry) {
+           // 添加时间拦截器，拦截所有请求
+           registry.addInterceptor(new TimeInterceptor()) //添加拦截器TimeInterceptor
+                   .addPathPatterns("/**")  // 设置拦截映射规则，/**拦截所有
+                   .excludePathPatterns("/static/**"); // 排除拦截映射规则，静态目录下的请求全排除
+           // 添加国际化拦截器，拦截所有请求，根据MyMvcAutoConfiguration自定义localeResolver方法获取cookies的locale参数，来切换语言
+           registry.addInterceptor(new LocaleChangeInterceptor())
+                   .excludePathPatterns("/**");
+       }
+   ```
+
+   
+
+   5.通过messageResource 获取国际化信息
+   第一种方法，在Handler方法参数中加入Locale参数，注入ResourceBundleMessageSource对象`messageSource.getMessage(code,args,locale);`
+   第二种方法，使用自定义工具类
+
+   ```java
+   package net.dpwl.hellospringboot.util;
+   
+   import jakarta.servlet.http.HttpServletRequest;
+   import org.springframework.beans.factory.annotation.Autowired;
+   import org.springframework.context.support.ResourceBundleMessageSource;
+   
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/9 16:18
+    * 国际化工具类
+    */
+   public class LanguageUtil {
+       private static ResourceBundleMessageSource messageSource;
+       private static HttpServletRequest request;
+   
+       /**
+        * 获取国际化资源属性
+        * @param code
+        * @param args
+        * @return
+        */
+       public static String getMessage(String code,String... args) {
+           return  messageSource.getMessage(code, args, request.getLocale());
+       }
+       @Autowired
+       public void setMessageSource(ResourceBundleMessageSource messageSource) {
+           LanguageUtil.messageSource = messageSource;
+       }
+       @Autowired
+       public static void setRequest(HttpServletRequest request) {
+           LanguageUtil.request = request;
+       }
+   }
+   ```
+
+   
+
+3. 统一异常处理
+
+4-7-8

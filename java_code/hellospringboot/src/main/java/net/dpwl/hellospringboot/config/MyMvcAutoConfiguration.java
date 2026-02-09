@@ -4,7 +4,11 @@ import org.springframework.boot.servlet.filter.OrderedHiddenHttpMethodFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.HiddenHttpMethodFilter;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.i18n.CookieLocaleResolver;
+import jakarta.servlet.http.Cookie;
+
+import java.time.Duration;
 
 /**
  * @author 混江龙
@@ -27,4 +31,15 @@ public class MyMvcAutoConfiguration {
         // 比如我们可以在POST请求中添加一个隐藏字段_method，然后在Controller中根据这个字段来判断是PUT还是DELETE请求
         return new OrderedHiddenHttpMethodFilter();
     }
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        CookieLocaleResolver localeResolver = new CookieLocaleResolver();
+//        localeResolver.setCookieName("LANG_COOKIE"); spring boot 4 不能设置cookie的名称了
+        localeResolver.setCookieMaxAge(Duration.ofDays(60 * 60 * 24 * 30)); // 30天
+        localeResolver.setCookiePath("/");
+        return localeResolver;
+    }
+
+
 }
