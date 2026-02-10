@@ -6,7 +6,7 @@ package net.dpwl.hellospringboot.entity;
  * @time 2026/2/4 16:33
  */
 public class Result {
-    private String code;
+    private Integer code;
     private String msg;
     private Object data;
 
@@ -14,22 +14,22 @@ public class Result {
     public Result() {
     }
 
-    public Result(String code, String msg) {
+    public Result(Integer code, String msg) {
         this.code = code;
         this.msg = msg;
     }
 
-    public Result(String code, String msg, Object data) {
+    public Result(Integer code, String msg, Object data) {
         this.code = code;
         this.msg = msg;
         this.data = data;
     }
 
-    public String getCode() {
+    public Integer getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(Integer code) {
         this.code = code;
     }
 

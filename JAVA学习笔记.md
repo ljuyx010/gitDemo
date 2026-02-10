@@ -10167,4 +10167,332 @@ SpringMVC的自动配置类：WebMvcAutoConfiguration
 
 3. 统一异常处理
 
-4-7-8
+@ControllerAdvice 配合 `@ExceptionHandler` 实现全局异常处理
+
+```java
+package net.dpwl.hellospringboot.config;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.ModelAndView;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/10 15:47
+ * @ControllerAdvice 配合 `@ExceptionHandler` 实现全局异常处理
+ */
+@ControllerAdvice
+public class GeneralExceptionHandler {
+    @ExceptionHandler(Exception.class)
+    public ModelAndView handleException(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Exception ex,
+                                        HandlerMethod handler)
+    {
+        System.out.println("全局异常处理");
+//        如果当前请求是ajax就返回json
+//        1.根据用户请求的处理方法，是否是一个返回json的处理费方法
+//        RestController restController = handler.getClass().getAnnotation(RestController.class); // 获得类上面的RestController注解
+//        ResponseBody responseBody = handler.getMethod().getAnnotation(ResponseBody.class); // 获得方法上面的ResponseBody注解
+//        if (restController != null && responseBody != null) { // 是一个返回json的处理方法
+//        }
+
+//        2.可以更加请求头中的content-type是否包含"application/json"来判断是否是ajax请求
+        if(request.getHeader("content-type").contains("application/json")){
+            // 是一个ajax请求,可以直接输出json,或者集成jackson等框架来输出json
+//            response.getWriter().write("{'code':500,'msg':'服务器异常'}");
+//            集成jackson的方式来输出json
+            ModelAndView modelAndView = new ModelAndView();
+            // 通常会根据不同的异常返回不同的编码
+            modelAndView.addObject("code", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            modelAndView.addObject("message", ex.getMessage());
+            return modelAndView;
+        }else {
+            // 不是一个ajax请求,可以返回一个错误页面
+            ModelAndView modelAndView = new ModelAndView("error");
+            modelAndView.addObject("ex", ex);
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            ex.printStackTrace(pw);
+            System.out.println(sw.toString()); // 日志记录
+            return  modelAndView;
+        }
+    }
+
+}
+```
+
+
+
+spring boot 有统一异常处理自动配置类,可以根据其原理定制自己的异常处理
+
+`ErrorMvcAutoConfiguration`  它是统一异常处理自动配置类
+
+**它的重要组件：**
+`DefaultErrorAttributes`:
+BasicErrorController 它其实就是一个处理error请求的一个控制器
+
+```java
+@Controller
+@RequestMapping({"${spring.web.error.path:${error.path:/error}}"})
+public class BasicErrorController extends AbstractErrorController {
+```
+
+**统一异常处理流程：**
+![QQ20260210-114219](.\img\QQ20260210-114219.png)
+
+**如何处理的？**
+
+```java
+// 当使用浏览器访问，请求头Accept=“text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7”
+// 就包含了"text/html"，它就会被映射到errorHtml，所以如果是浏览器请求就会交给errorHtml方法处理
+@RequestMapping(
+        produces = {"text/html"}
+    )
+    public ModelAndView errorHtml(HttpServletRequest request, HttpServletResponse response) {
+        HttpStatus status = this.getStatus(request);
+        Map<String, Object> model = Collections.unmodifiableMap(this.getErrorAttributes(request, this.getErrorAttributeOptions(request, MediaType.TEXT_HTML)));
+        response.setStatus(status.value());
+        ModelAndView modelAndView = this.resolveErrorView(request, response, status, model);
+        return modelAndView != null ? modelAndView : new ModelAndView("error", model);
+    }
+// 除了text/html的其他请求都会交给error方法处理
+    @RequestMapping
+    public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {
+        HttpStatus status = this.getStatus(request);
+        if (status == HttpStatus.NO_CONTENT) {
+            return new ResponseEntity(status);
+        } else {
+            Map<String, Object> body = this.getErrorAttributes(request, this.getErrorAttributeOptions(request, MediaType.ALL));
+            return new ResponseEntity(body, status);
+        }
+    }
+```
+
+**errorHtml方法怎么定制它的返回页面**
+
+`this.getErrorAttributes`方法获取所需要的错误信息
+`this.resolveErrorView`方法解析视图
+
+```java
+public @Nullable ModelAndView resolveErrorView(HttpServletRequest request, HttpStatus status, Map<String, Object> model) {
+        ModelAndView modelAndView = this.resolve(String.valueOf(status.value()), model);
+        if (modelAndView == null && SERIES_VIEWS.containsKey(status.series())) {
+            modelAndView = this.resolve((String)SERIES_VIEWS.get(status.series()), model);
+        }
+
+        return modelAndView;
+    }
+// 先从模板视图去解析（由于我们没有配置模板视图，所以并不能解析出来）
+private @Nullable ModelAndView resolve(String viewName, Map<String, Object> model) {
+        String errorViewName = "error/" + viewName;
+        TemplateAvailabilityProvider provider = this.templateAvailabilityProviders.getProvider(errorViewName, this.applicationContext);
+        return provider != null ? new ModelAndView(errorViewName, model) : this.resolveResource(errorViewName, model);
+    }
+// 就是去classpath:/error/找viewName + ".html"的文件，如果找到就作为视图返回
+private @Nullable ModelAndView resolveResource(String viewName, Map<String, Object> model) {
+        for(String location : this.resources.getStaticLocations()) {
+            try {
+                Resource resource = this.applicationContext.getResource(location);
+                resource = resource.createRelative(viewName + ".html");
+                if (resource.exists()) {
+                    return new ModelAndView(new HtmlResourceView(resource), model);
+                }
+            } catch (Exception var8) {
+            }
+        }
+
+        return null;
+    }
+```
+
+所以定制errorHtml只需要在classpath:/error/目录下创建一个4XX.html的文件就可以了。
+
+**error方法是怎么返回json数据的，怎么定制自己的json数据**
+其实就是通过`this.getErrorAttributes`获取异常信息，并返回
+
+`BasicErrorController`:
+`DefaultErrorViewResolver`:
+
+通过上面研究自动异常配置类自定义异常配置
+
+```java
+package net.dpwl.hellospringboot.controller;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import net.dpwl.hellospringboot.entity.Result;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.web.ErrorProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
+import org.springframework.boot.webmvc.autoconfigure.error.AbstractErrorController;
+import org.springframework.boot.webmvc.autoconfigure.error.ErrorViewResolver;
+import org.springframework.boot.webmvc.error.ErrorAttributes;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/10 14:17
+ * 自定义错误信息控制器
+ */
+@Controller
+@RequestMapping(value = "error")
+@EnableConfigurationProperties({ServerProperties.class})
+public class CustomErrorController extends AbstractErrorController {
+    private final ErrorProperties errorProperties;
+
+    public CustomErrorController(ErrorAttributes errorAttributes, ErrorProperties errorProperties, @Nullable List<ErrorViewResolver> errorViewResolvers) {
+        super(errorAttributes, errorViewResolvers);
+        this.errorProperties = errorProperties;
+    }
+    // 日志记录器
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(CustomErrorController.class);
+
+    /**
+     * 处理HTML错误请求
+     * 加上异常日志记录
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(
+            produces = {"text/html"}
+    )
+    public ModelAndView errorHtml(HttpServletRequest request, HttpServletResponse response) {
+        HttpStatus status = this.getStatus(request);
+        //getErrorAttributeOptions可以动态的根据请求的MediaType返回不同的ErrorAttributeOptions
+        //根据配置文件中server.error.include-exception=true来决定是否包含异常信息选项
+        Map<String, Object> model = Collections.unmodifiableMap(this.getErrorAttributes(request, this.getErrorAttributeOptions(request, MediaType.TEXT_HTML)));
+        //记录异常日志,把异常的栈信息记录到异常日志中
+        logger.error(model.get("trace").toString());
+        response.setStatus(status.value());
+        ModelAndView modelAndView = this.resolveErrorView(request, response, status, model);
+        return modelAndView != null ? modelAndView : new ModelAndView("error", model);
+    }
+
+    /**
+     * 处理非HTML错误请求
+     * 加上异常日志记录
+     * @param request
+     * @return Result
+     */
+    @RequestMapping
+    @ResponseBody  //返回json格式的错误信息
+    public Result error(HttpServletRequest request) {
+        HttpStatus status = this.getStatus(request);
+        if (status == HttpStatus.NO_CONTENT) {
+            return new Result(204, "no content");
+        } else {
+            //getErrorAttributeOptions可以动态的根据请求的MediaType返回不同的ErrorAttributeOptions
+            //根据配置文件中server.error.include-exception=true来决定是否包含异常信息选项
+            Map<String, Object> body = this.getErrorAttributes(request, this.getErrorAttributeOptions(request, MediaType.ALL));
+            logger.error(body.get("trace").toString());
+            Result result = new Result();
+            result.setCode(body.get("status") == null ? 500 : Integer.parseInt(body.get("status").toString()));
+            result.setMsg(body.get("message") == null ? status.getReasonPhrase() : body.get("message").toString());
+            return result;
+        }
+    }
+
+    protected ErrorAttributeOptions getErrorAttributeOptions(HttpServletRequest request, MediaType mediaType) {
+        ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
+        if (this.errorProperties.isIncludeException()) {
+            options = options.including(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.EXCEPTION});
+        }
+
+        if (this.isIncludeStackTrace(request, mediaType)) {
+            options = options.including(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.STACK_TRACE});
+        }
+
+        if (this.isIncludeMessage(request, mediaType)) {
+            options = options.including(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.MESSAGE});
+        }
+
+        if (this.isIncludeBindingErrors(request, mediaType)) {
+            options = options.including(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.BINDING_ERRORS});
+        }
+
+        options = this.isIncludePath(request, mediaType) ? options.including(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.PATH}) : options.excluding(new ErrorAttributeOptions.Include[]{ErrorAttributeOptions.Include.PATH});
+        return options;
+    }
+
+    protected boolean isIncludeStackTrace(HttpServletRequest request, MediaType produces) {
+        boolean var10000;
+        switch (this.getErrorProperties().getIncludeStacktrace()) {
+            case ALWAYS -> var10000 = true;
+            case ON_PARAM -> var10000 = this.getTraceParameter(request);
+            case NEVER -> var10000 = false;
+            default -> throw new IncompatibleClassChangeError();
+        }
+
+        return var10000;
+    }
+
+    protected boolean isIncludeMessage(HttpServletRequest request, MediaType produces) {
+        boolean var10000;
+        switch (this.getErrorProperties().getIncludeMessage()) {
+            case ALWAYS -> var10000 = true;
+            case ON_PARAM -> var10000 = this.getMessageParameter(request);
+            case NEVER -> var10000 = false;
+            default -> throw new IncompatibleClassChangeError();
+        }
+
+        return var10000;
+    }
+
+    protected boolean isIncludeBindingErrors(HttpServletRequest request, MediaType produces) {
+        boolean var10000;
+        switch (this.getErrorProperties().getIncludeBindingErrors()) {
+            case ALWAYS -> var10000 = true;
+            case ON_PARAM -> var10000 = this.getErrorsParameter(request);
+            case NEVER -> var10000 = false;
+            default -> throw new IncompatibleClassChangeError();
+        }
+
+        return var10000;
+    }
+
+    protected boolean isIncludePath(HttpServletRequest request, MediaType produces) {
+        boolean var10000;
+        switch (this.getErrorProperties().getIncludePath()) {
+            case ALWAYS -> var10000 = true;
+            case ON_PARAM -> var10000 = this.getPathParameter(request);
+            case NEVER -> var10000 = false;
+            default -> throw new IncompatibleClassChangeError();
+        }
+
+        return var10000;
+    }
+
+    protected ErrorProperties getErrorProperties() {
+        return this.errorProperties;
+    }
+}
+
+```
+
+### spring boot 的嵌入式Servlet容器
+
+spring boot默认的Servlet容器是：Tomcat，spring boot4 对应的tomcat是11.0.15
+
+4-8-1
