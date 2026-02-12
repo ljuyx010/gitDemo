@@ -1,0 +1,18 @@
+package net.dpwl.hellospringboot;
+
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/11 16:37
+ */
+// 当tomcat启动时就会调用configure方法，从而在springboot启动类的基础上启动springboot
+    //什么时候调用？
+public class TomcatStartSpringBoot extends SpringBootServletInitializer {
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+        return builder.sources(HellospringbootApplication.class);
+    }
+}

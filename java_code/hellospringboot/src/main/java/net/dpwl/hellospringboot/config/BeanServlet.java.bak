@@ -1,0 +1,21 @@
+package net.dpwl.hellospringboot.config;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/11 11:10
+ */
+public class BeanServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        super.doGet(req, resp);
+        resp.getWriter().write("Bean servlet");
+    }
+}

@@ -1,0 +1,20 @@
+package net.dpwl.hellospringboot.config;
+
+
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/11 10:32
+ */
+@Component
+public class CustomizationBean implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+    @Override
+    public void customize(ConfigurableServletWebServerFactory factory) {
+        factory.setPort(8080);
+        factory.setContextPath("/dpwl");
+    }
+}

@@ -1,0 +1,71 @@
+package net.dpwl.hellospringboot.config;
+
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.support.http.StatViewServlet;
+import com.alibaba.druid.support.http.WebStatFilter;
+import jakarta.servlet.Filter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import javax.sql.DataSource;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/12 16:12
+ * 如果依赖的是Druid不是Druid场景启动器，下面的配置要自己配置，
+ * 如果是Druid场景启动器，下面的配置可以不配置，就会自动从配置文件中获取并自动配置
+ */
+//@Configuration
+// 当配置中配置类为DruidDataSource时，才会加载该配置类
+//@ConditionalOnProperty(name="spring.datasource.type",havingValue="com.alibaba.druid.pool.DruidDataSource")
+public class DruidConfiguration {
+
+    // 配置数据源的第一种方法：通过@ConfigurationProperties注解绑定Application.yml自动将spring.datasource下的所有属性到DataSource
+    @Bean
+    @ConfigurationProperties(prefix = "spring.datasource")  //会绑定Application.yml 中spring.datasource下的所有属性到DataSource
+    public DataSource druidDataSource() {
+       return new DruidDataSource();
+    }
+
+//    第二种方法：根据配置动态构建一个DruidDataSource
+/*    @Bean
+    public DataSource druidDataSourceBuild(DataSourceProperties properties) {
+        // 根据配置动态构建一个DruidDataSource
+        return properties.initializeDataSourceBuilder().type(DruidDataSource.class).build();
+    }*/
+
+    /**
+    * 配置Druid监控台的Servlet
+     * @return
+     */
+    @Bean
+    public ServletRegistrationBean statViewServlet() {
+        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+        servletRegistrationBean.setServlet(new StatViewServlet());
+        servletRegistrationBean.addUrlMappings("/druid/*"); // 配置监控台的URL映射
+        servletRegistrationBean.addInitParameter("allow", "127.0.0.1");     // 允许访问的IP，默认所有IP
+        servletRegistrationBean.addInitParameter("deny", "192.168.0.1");   // 拒绝访问的IP，默认无拒绝IP
+        servletRegistrationBean.addInitParameter("loginUsername", "admin");
+        servletRegistrationBean.addInitParameter("loginPassword", "admin");
+        servletRegistrationBean.addInitParameter("resetEnable", "false");
+        return servletRegistrationBean;
+    }
+
+    /**
+    * 配置Druid监控台的Filter:要监控那些请求
+     * @return 返回锅炉器配置对象
+     */
+    @Bean
+    public FilterRegistrationBean statFilter() {
+        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
+        filterRegistrationBean.setFilter((Filter) new WebStatFilter());
+        filterRegistrationBean.addUrlPatterns("/*"); // 配置要监控的URL模式，默认所有URL
+        filterRegistrationBean.addInitParameter("exclusions", "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*"); // 配置要排除的URL模式，默认排除静态资源和druid自己
+        return filterRegistrationBean;
+    }
+}

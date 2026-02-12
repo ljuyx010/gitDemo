@@ -25,7 +25,7 @@ public class MyMvcAutoConfiguration {
      */
     @Bean
     public HiddenHttpMethodFilter hiddenHttpMethodFilter() {
-        // springMv 中默认的 OrderedHiddenHttpMethodFilter 类，不存在HiddenHttpMethodFilter才会自动配置，
+        // springMvc 中默认的 OrderedHiddenHttpMethodFilter 类，不存在HiddenHttpMethodFilter才会自动配置，
         // 我们自定义的配置类返回了HiddenHttpMethodFilter类，所以Spring mvc 不会自动配置HiddenHttpMethodFilter类，
         // 我们自定义的这个就会自动加载，然后可以实现一些我们想要的功能，
         // 比如我们可以在POST请求中添加一个隐藏字段_method，然后在Controller中根据这个字段来判断是PUT还是DELETE请求

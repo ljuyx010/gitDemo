@@ -10495,4 +10495,628 @@ public class CustomErrorController extends AbstractErrorController {
 
 spring boot默认的Servlet容器是：Tomcat，spring boot4 对应的tomcat是11.0.15
 
-4-8-1
+- **嵌入式Servlet容器配置修改**
+
+  1.通过全局配置文件修改：可以通过server.XXX 来进行web服务配置，没有带服务名称的是通用配置
+
+  带了具体的服务器名称则是单独对该服务器进行设置，比如server.tomcat.XXX 就是专门针对tomcat的配置。
+
+  2.通过`WebServerFactoryCustomizer`的Bean修改
+
+  ```java
+  package net.dpwl.hellospringboot.config;
+  
+  
+  import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+  import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
+  import org.springframework.stereotype.Component;
+  
+  /**
+   * @author 混江龙
+   * @version 1.0
+   * @time 2026/2/11 10:32
+   */
+  @Component
+  public class CustomizationBean implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+      @Override
+      public void customize(ConfigurableServletWebServerFactory factory) {
+          factory.setPort(8080); //设置web端口号
+          factory.setContextPath("/dpwl"); // 设置项目名称
+      }
+  }
+  ```
+
+- **注册Servlet三大组件**
+  Servlet（连接器），listener（监听器），filter（过滤器）有两种方法：
+  1.Servlet3.0规范提供的注解方式注册
+
+  `@WebServlet,@WebListener,@WebFilter`
+  声明servlet及映射
+
+  ```java
+  package net.dpwl.hellospringboot.config;
+  
+  import jakarta.servlet.ServletException;
+  import jakarta.servlet.annotation.WebFilter;
+  import jakarta.servlet.annotation.WebListener;
+  import jakarta.servlet.annotation.WebServlet;
+  import jakarta.servlet.http.HttpServlet;
+  import jakarta.servlet.http.HttpServletRequest;
+  import jakarta.servlet.http.HttpServletResponse;
+  
+  import java.io.IOException;
+  
+  /**
+   * @author 混江龙
+   * @version 1.0
+   * @time 2026/2/11 10:50
+   */
+  @WebServlet(name = "helloServlet", urlPatterns = "/hello")
+  //@WebFilter
+  //@WebListener
+  public class HelloServlet extends HttpServlet {
+      @Override
+      protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+          super.doGet(req, resp);
+          resp.getWriter().write("hello servlet");
+      }
+  }
+  
+  ```
+
+  入口文件加上servlet扫描
+
+  ```java
+  @SpringBootApplication
+  @ServletComponentScan // 加了此注册才会扫描@WebServlet等注解
+  public class HellospringbootApplication {
+  
+      public static void main(String[] args) {
+          SpringApplication.run(HellospringbootApplication.class, args);
+      }
+  
+  }
+  ```
+
+  
+
+  2.SpringBoot提供的注册
+  通过`ServletRegistrationBean,ServletListenerRegistrationBean,FilterRegistrationBean`注册
+
+  ```java
+  // 自定义配置类中通过ServletRegistrationBean的方式注册一个servlet bean
+  @Configuration
+  public class MyWebMvcConfigurer implements WebMvcConfigurer {
+      /**
+       * 注册一个自定义的Servlet Bean
+       * @return ServletRegistrationBean
+       */
+      @Bean
+      public ServletRegistrationBean myServlet(){
+          // 声明一个Servlet注册Bean，将BeanServlet注册到路径/bean
+          ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+          // 设置Servlet实例
+          servletRegistrationBean.setServlet(new BeanServlet());
+          // 设置Bean名称，用于在其他地方引用
+          servletRegistrationBean.setBeanName("myServlet");
+          // 设置映射路径
+          servletRegistrationBean.addUrlMappings("/bean");
+          return servletRegistrationBean;
+      }
+  
+  }
+  // Servlet bean 的实现
+  public class BeanServlet extends HttpServlet {
+      @Override
+      protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+          super.doGet(req, resp);
+          resp.getWriter().write("Bean servlet");
+      }
+  }
+  ```
+
+- **切换其他嵌入式Servlet容器**
+  spring boot包含对嵌入式Tomcat，jetty和Undertow服务器的支持
+  tomcat 默认（web服务器最常用）
+  jetty（socket）
+  Undertow（无阻塞，响应式应用）
+
+  ```xml
+  <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+      <!-- 排除默认的tomcat依赖，使用jetty作为servlet容器-->
+      <exclusions>
+          <exclusion>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-tomcat</artifactId>
+          </exclusion>
+      </exclusions>
+  </dependency>
+  <!--  引入jetty作为servlet容器-->
+  <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jetty</artifactId>
+  </dependency>
+  ```
+
+- **嵌入式Servlet容器自动配置原理**
+
+  1.为什么可以根据配置的依赖自动使用对应的servlet容器
+
+  ```java
+  @AutoConfiguration  // 自动注入
+  @ConditionalOnClass({ServletRequest.class, Tomcat.class, UpgradeProtocol.class, TomcatServletWebServerFactory.class})
+  @ConditionalOnWebApplication(
+      type = Type.SERVLET
+  )
+  @EnableConfigurationProperties({TomcatServerProperties.class})
+  @Import({ServletWebServerConfiguration.class, TomcatWebServerConfiguration.class})
+  public final class TomcatServletWebServerAutoConfiguration {
+      private final TomcatServerProperties tomcatProperties;
+  
+      TomcatServletWebServerAutoConfiguration(TomcatServerProperties tomcatProperties) {
+          this.tomcatProperties = tomcatProperties;
+      }
+  }
+  ```
+
+  2.怎么根据配置文件中server.XXX和WebServerFactoryCustomizer去设置servlet容器？
+
+  ```java
+  @Configuration(
+      proxyBeanMethods = false
+  )
+  @EnableConfigurationProperties({ServerProperties.class}) //server开头的配置项都会匹配到ServerProperties这个配置类
+  @Import({BeanPostProcessorsRegistrar.class})
+  public class ServletWebServerConfiguration {
+     // 获取一个ServletWebServerFactoryCustomizer
+      @Bean
+      ServletWebServerFactoryCustomizer servletWebServerFactoryCustomizer(ServerProperties serverProperties, ObjectProvider<WebListenerRegistrar> webListenerRegistrars, ObjectProvider<CookieSameSiteSupplier> cookieSameSiteSuppliers, ObjectProvider<SslBundles> sslBundles) {
+          return new ServletWebServerFactoryCustomizer(serverProperties, webListenerRegistrars.orderedStream().toList(), cookieSameSiteSuppliers.orderedStream().toList(), (SslBundles)sslBundles.getIfAvailable());
+      }
+  }
+  // servletWebServerFactoryCustomizer也实现了WebServerFactoryCustomizer,说明它也是定制servlet容器的
+  public class ServletWebServerFactoryCustomizer implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>, Ordered {
+      private final ServerProperties serverProperties;
+      private final List<WebListenerRegistrar> webListenerRegistrars;
+      private final List<CookieSameSiteSupplier> cookieSameSiteSuppliers;
+      private final @Nullable SslBundles sslBundles;
+  
+      //customize方法实现了根据配置文件中server.***来进行定制servlet容器
+      public void customize(ConfigurableServletWebServerFactory factory) {
+  // 1. 获取 PropertyMapper 实例        
+  PropertyMapper map = PropertyMapper.get();
+  // 2. 引用当前对象的 serverProperties
+  		ServerProperties var10001 = this.serverProperties;
+  // 3. 确保 serverProperties 不为 null        
+          Objects.requireNonNull(var10001);
+  // 4. 使用方法引用的方式获取端口配置        
+          PropertyMapper.Source var10000 = map.from(var10001::getPort);
+  // 5.确保 传入的factory 不为 null
+          Objects.requireNonNull(factory);
+  // 6.把 4获取的端口映射到   factory 对应的port属性。    
+          var10000.to(factory::setPort);
+          var10001 = this.serverProperties;
+          Objects.requireNonNull(var10001);
+          var10000 = map.from(var10001::getAddress);
+          Objects.requireNonNull(factory);
+          var10000.to(factory::setAddress);
+          ServerProperties.Servlet var20 = 						this.serverProperties.getServlet();
+          ...
+      }
+  }
+  //TomcatServletWebServerFactoryCustomizer 根据配置文件中server.tomcat.XXX 定制servlet容器
+  TomcatServletWebServerFactoryCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, Ordered {
+      private final TomcatServerProperties tomcatProperties;
+  
+      TomcatServletWebServerFactoryCustomizer(TomcatServerProperties tomcatProperties) {
+          this.tomcatProperties = tomcatProperties;
+      }
+  }
+  ```
+
+  怎么让所有的webServerFactoryCustomizer Bean一一调用的
+
+  ```java
+  //BeanPostProcessorsRegistrar实现了ImportBeanDefinitionRegistrar的registerBeanDefinitions接口
+  static class BeanPostProcessorsRegistrar implements ImportBeanDefinitionRegistrar, BeanFactoryAware {
+          private @Nullable ConfigurableListableBeanFactory beanFactory;
+  
+          public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+              if (beanFactory instanceof ConfigurableListableBeanFactory listableBeanFactory) {
+                  this.beanFactory = listableBeanFactory;
+              }
+  
+          }
+  // registerBeanDefinitions接口注册了两个bean
+          public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+              if (this.beanFactory != null) {
+               // 注册了webServerFactoryCustomizerBeanPostProcessor
+                  this.registerSyntheticBeanIfMissing(this.beanFactory, registry, "webServerFactoryCustomizerBeanPostProcessor", WebServerFactoryCustomizerBeanPostProcessor.class);
+                  this.registerSyntheticBeanIfMissing(this.beanFactory, registry, "errorPageRegistrarBeanPostProcessor", ErrorPageRegistrarBeanPostProcessor.class);
+              }
+          }
+  //ImportBeanDefinitionRegistrar提供一个方法，并且提供BeanDefinitionRegistry让我们去注册Bean
+  public interface ImportBeanDefinitionRegistrar {
+      default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry, BeanNameGenerator importBeanNameGenerator) {
+          this.registerBeanDefinitions(importingClassMetadata, registry);
+      }
+  
+      default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+      }
+  }
+      //BeanPostProcessor在bean创建时 在初始化时就会调用
+   public class WebServerFactoryCustomizerBeanPostProcessor implements BeanPostProcessor, BeanFactoryAware {
+       public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+           //会判断bean创建时是不是WebServerFactory类型的，是就创建
+          if (bean instanceof WebServerFactory webServerFactory) {
+              this.postProcessBeforeInitialization(webServerFactory);
+          }
+  
+          return bean;
+      }
+   }
+      private void postProcessBeforeInitialization(WebServerFactory webServerFactory) {
+   //调用getCustomizers
+         ((LambdaSafe.Callbacks)LambdaSafe.callbacks(WebServerFactoryCustomizer.class, this.getCustomizers(), webServerFactory, new Object[0]).withLogger(WebServerFactoryCustomizerBeanPostProcessor.class)).invoke(
+             // 循环所有的webServerFactory并一一调用
+             (customizer) -> customizer.customize(webServerFactory));
+      }
+      
+      private Collection<WebServerFactoryCustomizer<?>> getCustomizers() {
+          if (this.customizers == null) {
+              this.customizers = new ArrayList(this.getWebServerFactoryCustomizerBeans());
+              this.customizers.sort(AnnotationAwareOrderComparator.INSTANCE);
+              this.customizers = Collections.unmodifiableList(this.customizers);
+          }
+  
+          return this.customizers;
+      }
+      //getWebServerFactoryCustomizerBeans 就获取了所有实现了WebServerFactoryCustomizer接口的Bean，就是获取了自定义的，和ServletWebServerFactoryCustomizer，TomcatServletWebServerFactoryCustomizer
+      private Collection<WebServerFactoryCustomizer<?>> getWebServerFactoryCustomizerBeans() {
+          return this.beanFactory.getBeansOfType(WebServerFactoryCustomizer.class, false, false).values();
+      }
+  ```
+
+  当对应的嵌入式容器启用时，就会在里面配置一个webServerFactory类型的Bean，负责创建对应的容器和启动
+
+  3.嵌入式的Servlet容器是怎么启动的
+  TomcatServletWebServerFactory 自动配置中根据不同的依赖，启动对应的嵌入式容器，然后配置一个对应的servlet容器工厂类，比如tomcat：`TomcatServletWebServerFactory`,在SpringBoot应用启动的时候，就会调用容器refresh方法的onRefresh，调用getwebServer，创建servlet及启动
+
+  ```java
+  public WebServer getWebServer(ServletContextInitializer... initializers) {
+          Tomcat tomcat = this.createTomcat();
+          this.prepareContext(tomcat.getHost(), initializers);
+          return this.getTomcatWebServer(tomcat);
+      }
+  // 初始化方法启动servlet容器
+  private void initialize() throws WebServerException {
+          logger.info("Tomcat initialized with " + this.getPortsDescription(false));
+          synchronized(this.monitor) {
+              try {
+                  this.addInstanceIdToEngineName();
+                  Context context = this.findContext();
+                  context.addLifecycleListener((event) -> {
+                      if (context.equals(event.getSource()) && "start".equals(event.getType())) {
+                          this.removeServiceConnectors();
+                      }
+  
+                  });
+                  this.disableBindOnInit();
+                  this.tomcat.start();
+                  this.rethrowDeferredStartupExceptions();
+  
+                  try {
+                      ContextBindings.bindClassLoader(context, context.getNamingToken(), this.getClass().getClassLoader());
+                  } catch (NamingException var5) {
+                  }
+  
+                  this.startNonDaemonAwaitThread();
+              } catch (Exception ex) {
+                  this.stopSilently();
+                  this.destroySilently();
+                  throw new WebServerException("Unable to start embedded Tomcat", ex);
+              }
+  
+          }
+      }
+  ```
+
+- **使用外部Servlet容器**
+  内嵌servlet容器部署：打jar包--->上传服务器---->java -jar 启动
+  外部servlet容器部署：服务器安装tomcat，配置环境变量，部署：打war包--->上传到服务器---->tomcat webapp startup.sh 启动
+  开发：将开发绑定本地tomcat
+
+  使用外部：1.下载tomcat服务
+  2.设置当前maven的打包方式`<packaging>war</packaging>`,并把项目中的tomcat场景启动器加上`<scope>provided</scope>`，让tomcat相关依赖不参与打包部署（因为外置的tomcat服务器已经有这些jar包）
+
+  3.为了让它支持springboot，需要新建继承了SpringBootServletInitializer的类来启动springboot应用
+
+  ```java
+  package net.dpwl.hellospringboot;
+  
+  import org.springframework.boot.builder.SpringApplicationBuilder;
+  import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+  
+  /**
+   * @author 混江龙
+   * @version 1.0
+   * @time 2026/2/11 16:37
+   */
+  // 当tomcat启动时就会调用configure方法，从而在springboot启动类的基础上启动springboot
+      //什么时候调用？
+  public class TomcatStartSpringBoot extends SpringBootServletInitializer {
+      @Override
+      protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+          // springboot 应用的入口类的反射
+          return builder.sources(HellospringbootApplication.class);
+      }
+  }
+  ```
+
+  4.在idea中运行，设置外部服务器，添加应用的war包
+  ![QQ20260211-165304](.\img\QQ20260211-165304.png)
+
+- **外部Servlet容器启动springboot应用原理**
+  tomcat---->访问web.xml--->filter,listener,servlet  springboot项目中没有web.xml文件但是tomcat 满足servlet3.0规范，所有可以访问到`@WebServlet(name = "helloServlet", urlPatterns = "/hello")`的注解，但是并不会主动启动springboot应用。
+  当我们添加了继承了SpringBootServletInitializer的类就可以正常启动springboot项目，所以tomcat启动的时候肯定调用了`SpringBootServletInitializer`的SpringApplicationBuilder，就会启动springboot。
+  Servlet 3.0规范官方文档8.2.4（SPI规范）
+
+  当servlet容器启动时候就会去META-INF/services文件夹中找到javax.servlet.ServletContainerInitializer,这个文件里面肯定绑定一个ServletContainerInitializer,当Servlet容器启动时就会去该文件中找到ServletContainerInitializer的实现类，从而创建它的实例并调用onStartUp
+
+  ```
+  @HandlesTypes(WebApplicationInitializer.class)
+  @HandlesTypes传入的类为ServletContainerInitializer感兴趣的
+  容器会自动在classpath中找到WebApplicationInitializer的实现并传入到onStartup方法的webAppInitializerClasses参数中
+  Set<Class<?>>webAppInitializerClasses这里面也包括之前我们自己定义的TomcatStartSpringBoot
+  如果不是接口，不是抽象，跟WebApplicationInitializer有关系 就会通过反射实例化，依次调用实例的onStartUp方法。依SpringBootServletInitializer为例，onStartUp方法中调用了this.createRootApplicationContext(),createRootApplicationContext又调用了builder = this.configure(builder);因为我们定义的TomcatStartSpringBoot继承了SpringBootServletInitializer并重写了configure方法，当调用configure就会来到我们重写的configure方法，将springboot的启动类传入到builder的source里，构建时就会根据配置类进行构建。最终调用return run(application)；就会帮我们启动springboot应用。
+  ```
+
+  **内嵌Servlet容器能直接启动springboot应用原理**
+  springboot项目默认打成jar包，当我们运行`java -jar XXXX.jar`时，会找到jar包中的`META-INF/MANIFEST.MF`文件，该文件中指定了启动类`Start-Class:XXXXXXXXXXXX`通过该类来启动springboot项目。
+  
+- **spring boot作为单题web应用的使用**
+
+  如果需要动态展示Springmvc的数据到页面上需要使用模板引l擎技术：
+  SpringBoot提供以下模板引擎技术的支持：Freemarker，Groovy，Thymeleaf，Mustache。
+  以Freemarker为例，需要引入模板引擎的场景启动器,[Freemarker在线手册](http://freemarker.foofun.cn/index.html)
+
+  ```xml
+  <!--freemarker模板引擎 场景启动器-->
+  <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-freemarker</artifactId>
+  </dependency>
+  ```
+
+  Controller就只能使用@Controller注解，不能使用@RestController（返回Json数据），控制器方法返回一个String为模板的name。
+
+### spring boot 与AOP
+
+通过swagger的注解来通过AOP增强实现记录用户访问日志的功能
+使用AOP需要pom.xml添加aop的依赖（springboot4.0版本不再有aop的场景启动器）
+
+```xml
+<!--aop的核心依赖-->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-aop</artifactId>
+</dependency>
+<!--aop的切面表达式-->
+<dependency>
+    <groupId>org.aspectj</groupId>
+    <artifactId>aspectjweaver</artifactId>
+</dependency>
+```
+
+```java
+package net.dpwl.hellospringboot.aspect;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author 混江龙
+ * @version 1.0
+ * @time 2026/2/12 11:45
+ * 日志切面类
+ */
+@Aspect  // 切面类
+@Component // 组件类
+public class LogAspectj {
+
+    Logger log=LoggerFactory.getLogger(LogAspectj.class);
+    //环绕通知
+    //execution 传入切点表达式
+//    * net.dpwl.hellospringboot.controller.*.*(..))"+"@annotation(Tag)"
+//    *表示返回任意值，net.dpwl.hellospringboot.controller包下*表示所有的类，*表示所有的方法（..）表示所有的参数
+//    @annotation(Operation)表示只有标注了Operation注解的方法才会被拦截
+    @Around("execution(* net.dpwl.hellospringboot.controller.*.*(..)) &&"+"@annotation(operation)")
+    //joinPoint 连接点对象，用于调用目标方法
+    //operation 操作对象，用于获取注解中的值
+    public Object logAround(ProceedingJoinPoint joinPoint, Operation operation) throws Throwable {
+        System.out.println("环绕通知开始");
+        StringBuilder loginfo=new StringBuilder("用户访问了："); //`日志信息字符串
+        Class<?> controller = joinPoint.getThis().getClass(); //获取当前控制器
+        Tag tag = controller.getAnnotation(Tag.class); // 获取控制器上的Tag注解
+        if (tag != null) {
+            loginfo.append(tag.name()+"-");
+        }
+        loginfo.append(operation.summary()); //operation.summary() 表示获取注解中的值
+        log.info(loginfo.toString()); // 打印日志信息
+        Object result = joinPoint.proceed();
+        System.out.println("环绕通知结束");
+        return result;
+    }
+}
+```
+
+### Spring boot集成MyBatis
+
+1. 整合Durid数据源
+   需要添加mysql所必须的依赖
+
+   ```xml
+   <!--jdbc场景启动器-->
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-jdbc</artifactId>
+   </dependency>
+   <!--mysql驱动-->
+   <dependency>
+       <groupId>mysql</groupId>
+       <artifactId>mysql-connector-java</artifactId>
+       <version>8.0.33</version>
+       <scope>runtime</scope>
+   </dependency>
+   <!--druid数据库连接池场景启动器-->
+   <dependency>
+       <groupId>com.alibaba</groupId>
+       <artifactId>druid-spring-boot-starter</artifactId>
+       <version>1.2.3</version>
+   </dependency>
+   ```
+
+   配置数据库的数据源等信息
+
+   ```yml
+   #application.yml配置文件
+   #数据源配置
+   spring:
+     datasource:
+       url: jdbc:mysql://localhost:3306/your_database?useSSL=false&serverTimezone=UTC #rewriteBatchedStatements=true 设置mysql开启批处理
+       username: root
+       username: your_username
+       password: your_password
+       driver-class-name: com.mysql.cj.jdbc.Driver
+       type: com.alibaba.druid.pool.DruidDataSource
+   
+       #数据源其他配置
+       # Druid连接池配置
+       druid:
+         # 初始化大小
+         initial-size: 5
+         # 最小连接数
+         min-idle: 5
+         # 最大连接数
+         max-active: 20
+         # 获取连接等待超时时间
+         max-wait: 60000
+         # 检测间隔时间
+         time-between-eviction-runs-millis: 60000
+         # 连接最小生存时间
+         min-evictable-idle-time-millis: 300000
+         # 验证查询
+         validationQuery: SELECT 1 FROM DUAL
+         # 申请连接时执行validationQuery检测连接是否有效
+         test-on-borrow: false
+         # 归还连接时执行validationQuery检测连接是否有效
+         test-on-return: false
+         # 空闲时检测
+         test-while-idle: true
+         # 配置监控统计拦截的filters
+         filters: stat,wall,slf4j
+         # 合并多个DruidDataSource的监控数据
+         use-global-data-source-stat: true
+         # WebStatFilter配置
+         web-stat-filter: # WebStatFilter配置 关联Druid的监控信息
+           enabled: true # 是否启用WebStatFilter
+           url-pattern: /* # 监控页面URL
+           exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+         # StatViewServlet配置（druid链接监控）
+         stat-view-servlet:
+           enabled: true
+           url-pattern: /druid/* # 监控页面URL
+           reset-enable: false
+           login-username: admin # 登录用户名
+           login-password: admin # 登录密码
+           allow: 127.0.0.1  # 允许访问的IP地址
+           deny: 192.168.1.100 # 拒绝访问的IP地址
+   ```
+
+   手动配置druid的配置类
+
+   ```java
+   package net.dpwl.hellospringboot.config;
+   
+   import com.alibaba.druid.pool.DruidDataSource;
+   import com.alibaba.druid.support.http.StatViewServlet;
+   import com.alibaba.druid.support.http.WebStatFilter;
+   import jakarta.servlet.Filter;
+   import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+   import org.springframework.boot.context.properties.ConfigurationProperties;
+   import org.springframework.boot.web.servlet.FilterRegistrationBean;
+   import org.springframework.boot.web.servlet.ServletRegistrationBean;
+   import org.springframework.context.annotation.Bean;
+   import org.springframework.context.annotation.Configuration;
+   
+   import javax.sql.DataSource;
+   
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/12 16:12
+    * 如果依赖的是Druid不是Druid场景启动器，下面的配置要自己配置，
+    * 如果是Druid场景启动器，下面的配置可以不配置，就会自动从配置文件中获取并自动配置
+    */
+   @Configuration
+   // 当配置中配置类为DruidDataSource时，才会加载该配置类
+   @ConditionalOnProperty(name="spring.datasource.type",havingValue="com.alibaba.druid.pool.DruidDataSource")
+   public class DruidConfiguration {
+   
+       // 配置数据源的第一种方法：通过@ConfigurationProperties注解绑定Application.yml自动将spring.datasource下的所有属性到DataSource
+       @Bean
+       @ConfigurationProperties(prefix = "spring.datasource")  //会绑定Application.yml 中spring.datasource下的所有属性到DataSource
+       public DataSource druidDataSource() {
+          return new DruidDataSource();
+       }
+   
+   //    第二种方法：根据配置动态构建一个DruidDataSource
+   /*    @Bean
+       public DataSource druidDataSourceBuild(DataSourceProperties properties) {
+           // 根据配置动态构建一个DruidDataSource
+           return properties.initializeDataSourceBuilder().type(DruidDataSource.class).build();
+       }*/
+   
+       /**
+       * 配置Druid监控台的Servlet
+        * @return
+        */
+       @Bean
+       public ServletRegistrationBean statViewServlet() {
+           ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+           servletRegistrationBean.setServlet(new StatViewServlet());
+           servletRegistrationBean.addUrlMappings("/druid/*"); // 配置监控台的URL映射
+           servletRegistrationBean.addInitParameter("allow", "127.0.0.1");     // 允许访问的IP，默认所有IP
+           servletRegistrationBean.addInitParameter("deny", "192.168.0.1");   // 拒绝访问的IP，默认无拒绝IP
+           servletRegistrationBean.addInitParameter("loginUsername", "admin");
+           servletRegistrationBean.addInitParameter("loginPassword", "admin");
+           servletRegistrationBean.addInitParameter("resetEnable", "false");
+           return servletRegistrationBean;
+       }
+   
+       /**
+       * 配置Druid监控台的Filter:要监控那些请求
+        * @return 返回锅炉器配置对象
+        */
+       @Bean
+       public FilterRegistrationBean statFilter() {
+           FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
+           filterRegistrationBean.setFilter((Filter) new WebStatFilter());
+           filterRegistrationBean.addUrlPatterns("/*"); // 配置要监控的URL模式，默认所有URL
+           filterRegistrationBean.addInitParameter("exclusions", "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*"); // 配置要排除的URL模式，默认排除静态资源和druid自己
+           return filterRegistrationBean;
+       }
+   }
+   ```
+
+   5-1
+
+2. 整合MyBatis

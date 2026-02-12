@@ -1,6 +1,8 @@
 package net.dpwl.hellospringboot.config;
 
 import net.dpwl.hellospringboot.interceptors.TimeInterceptor;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -13,6 +15,7 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
  * @author 混江龙
  * @version 1.0
  * @time 2026/2/6 16:11
+ * 自定义WebMvcConfigurer配置类
  */
 @Configuration
 public class MyWebMvcConfigurer implements WebMvcConfigurer {
@@ -65,6 +68,23 @@ public class MyWebMvcConfigurer implements WebMvcConfigurer {
                 .allowedOrigins("http//localhost:8081")  // 配置那些来源有权限跨域请求,避免跨域攻击
                 .allowedMethods("GET", "POST", "PUT", "DELETE"); // 配置允许跨域请求的请求方法
     }
+
+    /**
+     * 注册一个自定义的Servlet Bean
+     * @return ServletRegistrationBean
+     */
+    /*@Bean
+    public ServletRegistrationBean myServlet(){
+        // 声明一个Servlet注册Bean，将BeanServlet注册到路径/bean
+        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+        // 设置Servlet实例
+        servletRegistrationBean.setServlet(new BeanServlet());
+        // 设置Bean名称，用于在其他地方引用
+        servletRegistrationBean.setBeanName("myServlet");
+        // 设置映射路径
+        servletRegistrationBean.addUrlMappings("/bean");
+        return servletRegistrationBean;
+    }*/
 
 
 }
