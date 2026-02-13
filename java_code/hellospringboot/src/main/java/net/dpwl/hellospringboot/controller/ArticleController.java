@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @version 1.0
  * @time 2026/2/12 15:29
  */
-//@RestController
+@RestController
 @RequestMapping("/article")
 public class ArticleController {
     private final ArticleService articleServer;

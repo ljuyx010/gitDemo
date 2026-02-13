@@ -42,8 +42,6 @@ spring:
       filters: stat,wall,slf4j
       # 合并多个DruidDataSource的监控数据
       use-global-data-source-stat: true
-      schema: classpath:static/add.sql #初始化时运行脚本
-      initialize-schema: always # 初始化数据库schema
       # WebStatFilter配置
       web-stat-filter: # WebStatFilter配置 关联Druid的监控信息
         enabled: true # 是否启用WebStatFilter
@@ -58,3 +56,13 @@ spring:
         login-password: admin # 登录密码
         allow: 127.0.0.1  # 允许访问的IP地址
         deny: 192.168.1.100 # 拒绝访问的IP地址
+  sql:
+    init:
+#      schema-locations: classpath:static/add.sql #启用初始化sql
+#      mode: always # 初始化数据库schema
+mybatis-plus:
+#  配置mapper.xml文件的位置
+  mapper-locations: classpath*:net/dpwl/hellospringboot/mapper/**/*.xml
+  type-aliases-package: net.dpwl.hellospringboot.entity  # 配置实体类的包路径，使Mybatis-Plus能够自动扫描并识别实体类
+  configuration:
+    map-underscore-to-camel-case: true # 开启下划线转驼峰命名映射

@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
  * @version 1.0
  * @time 2026/2/12 15:39
  */
-//@Mapper
+@Mapper
 public interface ArticleMapper extends BaseMapper<Article> {
 
 }

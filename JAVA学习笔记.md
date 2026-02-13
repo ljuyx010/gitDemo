@@ -11039,10 +11039,14 @@ public class LogAspectj {
            login-password: admin # 登录密码
            allow: 127.0.0.1  # 允许访问的IP地址
            deny: 192.168.1.100 # 拒绝访问的IP地址
+     	sql:
+       	init:
+   	#      	schema-locations: classpath:static/add.sql #启用初始化sql
+   	#      	mode: always # 初始化数据库schema
    ```
-
+   
    手动配置druid的配置类
-
+   
    ```java
    package net.dpwl.hellospringboot.config;
    
@@ -11116,7 +11120,531 @@ public class LogAspectj {
        }
    }
    ```
-
-   5-1
-
+   
 2. 整合MyBatis
+   pom.xml文件添加mybaits-plus场景启动器
+
+   ```xml
+   <!--mybatisPlus场景启动器 内置了mybatis,不用再引入mybatis-->
+   <!-- Spring Boot 4 不能使用传统的 mybatis-plus-boot-starter，必须使用专门针对 Spring Boot 4 的 mybatis-plus-spring-boot4-starter -->
+   <dependency>
+       <groupId>com.baomidou</groupId>
+       <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+       <version>3.5.15</version>
+   </dependency>
+   <!--MybatisPlus 代码生成器 依赖 以下部分是可选的-->
+   <!-- 1. 代码生成器（必须与核心版本一致） -->
+   <dependency>
+       <groupId>com.baomidou</groupId>
+       <artifactId>mybatis-plus-generator</artifactId>
+       <version>3.5.15</version>
+       <scope>provided</scope> <!-- 通常仅用于开发期，建议 provided -->
+   </dependency>
+   <!-- 2. 模板引擎（必须选其一）自 3.5.9 起，生成器不再默认捆绑 Velocity，必须手动添加模板引擎依赖 -->
+   <!-- 官方推荐 Velocity（无需额外引入）或 Freemarker -->
+   <dependency>
+       <groupId>org.apache.velocity</groupId>
+       <artifactId>velocity-engine-core</artifactId>
+       <version>2.3</version>
+       <scope>provided</scope>
+   </dependency>
+   ```
+
+   如果使用mybaitsPlus代码生成器，在/test/java/项目包/下创建生成器插件代码
+
+   ```java
+   package net.dpwl.hellospringboot;
+   import com.baomidou.mybatisplus.annotation.IdType;
+   import com.baomidou.mybatisplus.generator.FastAutoGenerator;
+   import com.baomidou.mybatisplus.generator.config.OutputFile;
+   import com.baomidou.mybatisplus.generator.config.rules.DateType;
+   import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
+   import com.baomidou.mybatisplus.generator.engine.VelocityTemplateEngine;
+   import org.springframework.boot.test.context.SpringBootTest;
+   
+   import java.util.Collections;
+   /**
+    * @author 混江龙
+    * @version 1.0
+    * @time 2026/2/13 10:41
+    * mybaitsPlus 代码自动生成插件类
+    */
+   @SpringBootTest
+   public class CodeGenerator {
+       public static void main(String[] args) {
+   //        为了让生成器正确读取表注释，MySQL连接URL必须包含：remarks=true&useInformationSchema=true
+           FastAutoGenerator.create(
+                           "jdbc:mysql://localhost:3306/myyunmengfayuan?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&remarks=true&useInformationSchema=true", // 🔥改1：数据库URL
+                           "root",      // 🔥改2：用户名
+                           "H3u94c94kod0UjGuNmkfmqw0JMJRMF"   // 🔥改3：密码
+                   )
+                   // ========== 1. 全局配置 ==========
+                   .globalConfig(builder -> builder
+                           .author("混江龙")                // 🔥改4：作者
+                           .outputDir(System.getProperty("user.dir") + "/src/main/java") // 输出路径
+                           .disableOpenDir()               // 生成后不打开文件夹
+                           .enableSwagger()                // 实体类启用Swagger注解（按需）
+                           .dateType(DateType.TIME_PACK)   // 使用java.time.*
+                           .commentDate("yyyy-MM-dd")      // 注释日期格式
+                   )
+                   // ========== 2. 包名配置 ==========
+                   .packageConfig(builder -> builder
+                           .parent("net.dpwl.hellospringboot")           // 🔥改5：父包名
+                           .moduleName("")                 // 模块名（不需要可留空）
+                           .entity("entity")               // 实体类包名
+                           .service("service")             // service包名
+                           .serviceImpl("service.impl")    // serviceImpl包名
+                           .mapper("mapper")               // mapper包名
+                           .xml("mapper.xml")              // xml文件包名
+                           .controller("controller")       // controller包名
+                           .pathInfo(Collections.singletonMap(OutputFile.xml,
+                                   System.getProperty("user.dir") + "/src/main/resources/mapper")) // xml输出路径
+                   )
+                   // ========== 3. 策略配置（核心） ==========
+                   .strategyConfig(builder -> builder
+                           // ----- 表匹配规则 -----
+                           .addInclude("dp_user", "dp_article","dp_admin","dp_cate")     // 🔥改6：需要生成的表名，支持多个
+                           .addTablePrefix("dp_")        // 可选：过滤表前缀（负责在生成实体类时，把表名的这个前缀去掉，映射成不带前缀的类名）
+   
+                           // ----- Entity 策略（最常用）-----
+                           .entityBuilder()
+                           .javaTemplate("/templates/entity.java.vm")  // 使用自定义模板
+   //                        .enableLombok()                 // ✅ 启用Lombok（推荐）
+                           .enableChainModel()             // ✅ 链式setter
+                           .enableTableFieldAnnotation()   // ✅ 生成@TableField注解
+                           .naming(NamingStrategy.underline_to_camel)      // 表名下划线转驼峰
+                           .columnNaming(NamingStrategy.underline_to_camel) // 字段名下划线转驼峰
+                           .idType(IdType.AUTO)            // 主键策略：自增
+                           .logicDeleteColumnName("deleted") // 逻辑删除字段
+                           .versionColumnName("version")   // 乐观锁字段
+   
+                           // ----- Controller 策略 -----
+                           .controllerBuilder()
+                           .enableRestStyle()              // ✅ 生成@RestController
+                           .enableHyphenStyle()            // ✅ 允许驼峰转连字符（/user/detail-1）
+   
+                           // ----- Mapper 策略 -----
+                           .mapperBuilder()
+                           .enableBaseResultMap()          // ✅ 生成通用ResultMap
+                           .enableBaseColumnList()         // ✅ 生成通用ColumnList
+   
+                           // ----- Service 策略 -----
+                           .serviceBuilder()
+                           .formatServiceFileName("%sService")   // 接口名，如 UserService
+                           .formatServiceImplFileName("%sServiceImpl") // 实现类名
+                   )
+                   // ========== 4. 模板引擎（使用默认Velocity） ==========
+                   .templateEngine(new VelocityTemplateEngine()) // 必须显式指定Velocity模板引擎
+                   // ========== 5. 执行 ==========
+                   .execute();
+   
+           System.out.println("代码生成完成！");
+       }
+   }
+   ```
+
+
+   修改生成器的相应修改，运行生成器即可一键生成entity，Controller，service等代码。（生成器默认使用Swagger2的文档我们项目使用swagger3所以需要替换一下entity的模板。放到Resource/templates目录下）
+
+   ```vm
+   ##
+   ## MyBatis-Plus 3.5.x 实体类模板（Swagger 3/OpenAPI 3 适配版）
+   ## 修改内容：
+   ## 1. Swagger 2 → Swagger 3 (@ApiModel → @Schema)
+   ## 2. 包路径更新 (io.swagger.v3.oas.annotations.media.*)
+   ## 3. 注解属性适配 (value → description, 移除多余属性)
+   ##
+   package ${package.Entity};
+   
+   #foreach($pkg in ${table.importPackages})
+   import ${pkg};
+   #end
+   
+   ## ✅ Swagger 3 注解导入（关键修改）
+   #if(${swagger})
+   import io.swagger.v3.oas.annotations.media.Schema;
+   import io.swagger.v3.oas.annotations.media.Schema;
+   #end
+   
+   ## ✅ Spring Doc 兼容（可选，与上者二选一）
+   ## import io.swagger.v3.oas.annotations.media.Schema;
+   
+   #if(${entityLombokModel})
+   import lombok.Data;
+   import lombok.EqualsAndHashCode;
+       #if(${chainModel})
+       import lombok.experimental.Accessors;
+       #end
+   #end
+   
+   #if(${superEntityClass})
+   import ${superEntityClass};
+   #end
+   
+   #if(${activeRecord})
+   import com.baomidou.mybatisplus.extension.activerecord.Model;
+   #end
+   
+   /**
+    * $!{table.comment} 实体类
+    *
+    * @author ${author}
+    * @since ${date}
+    */
+       #if(${entityLombokModel})
+       @Data
+           #if(${superEntityClass})
+           @EqualsAndHashCode(callSuper = true)
+           #else
+           @EqualsAndHashCode(callSuper = false)
+           #end
+           #if(${chainModel})
+           @Accessors(chain = true)
+           #end
+       #end
+   
+       #if(${table.convert})
+       @TableName("${table.name}")
+       #end
+   
+       ## ✅ Swagger 3 @Schema 注解（替换原 @ApiModel）
+       #if(${swagger})
+       @Schema(name = "${entity}", description = "$!{table.comment}")
+       #end
+   
+       #if(${activeRecord})
+       public class ${entity} extends Model<${entity}> {
+       #elseif(${superEntityClass})
+           public class ${entity} extends ${superEntityClass}#if(${activeRecord})<${entity}>#end {
+       #else
+           public class ${entity} implements Serializable {
+       #end
+   
+       ## ---------- 序列化版本号 ----------
+       private static final long serialVersionUID = 1L;
+   
+       ## ---------- 字段遍历生成 ----------
+       #foreach($field in ${table.fields})
+           #if(${field.keyFlag})
+               #set($keyPropertyName=${field.propertyName})
+           #end
+   
+           #if("$!field.comment" != "")
+               ## ✅ Swagger 3 字段注解（关键修改）
+               #if(${swagger})
+               @Schema(description = "${field.comment}")
+               #else
+               /**
+                * ${field.comment}
+                */
+               #end
+           #end
+   
+           #if(${field.keyFlag})
+               ## ---------- 主键策略 ----------
+               #if(${field.keyIdentityFlag})
+               @TableId(value = "${field.annotationColumnName}", type = IdType.AUTO)
+               #elseif(!$null.isNull(${idType}) && "$!idType" != "")
+               @TableId(value = "${field.annotationColumnName}", type = IdType.${idType})
+               #elseif(${field.convert})
+               @TableId("${field.annotationColumnName}")
+               #end
+           #else
+               ## ---------- 普通字段 ----------
+               #if(${field.convert})
+               @TableField("${field.annotationColumnName}")
+               #end
+           #end
+   
+           ## ---------- 乐观锁注解 ----------
+           #if(${field.versionField})
+           @Version
+           #end
+   
+           ## ---------- 逻辑删除注解 ----------
+           #if(${field.logicDeleteField})
+           @TableLogic
+           #end
+   
+       private ${field.propertyType} ${field.propertyName};
+   
+       #end
+   
+       ## ---------- 非主键字段关联查询字段（如有） ----------
+       #foreach($field in ${table.commonFields})
+           #if(${field.convert})
+           @TableField("${field.name}")
+           #end
+       private ${field.propertyType} ${field.propertyName};
+       #end
+   
+       ## ---------- 无 Lombok 时的 getter/setter（保留原逻辑）---------
+       #if(!${entityLombokModel})
+           #foreach($field in ${table.fields})
+               #if(${field.propertyType.equals("boolean")})
+                   #set($getprefix="is")
+               #else
+                   #set($getprefix="get")
+               #end
+   
+               public ${field.propertyType} ${getprefix}${field.capitalName}() {
+               return ${field.propertyName};
+           }
+   
+               #if(${chainModel})
+                   public ${entity} set${field.capitalName}(${field.propertyType} ${field.propertyName}) {
+               #else
+                   public void set${field.capitalName}(${field.propertyType} ${field.propertyName}) {
+               #end
+               this.${field.propertyName} = ${field.propertyName};
+               #if(${chainModel})
+                   return this;
+               #end
+           }
+           #end
+       #end
+   
+       ## ---------- 默认 toString ----------
+       #if(!${entityLombokModel})
+           @Override
+           public String toString() {
+           return "${entity}{" +
+               #foreach($field in ${table.fields})
+                   #if($!{foreach.index}==0)
+                           "${field.propertyName}=" + ${field.propertyName} +
+                   #else
+                           ", ${field.propertyName}=" + ${field.propertyName} +
+                   #end
+               #end
+                   "}";
+       }
+       #end
+   }
+   ```
+
+   mybaits相关的配置：
+
+   ```yml
+   mybatis-plus:
+   #  配置mapper.xml文件的位置
+     mapper-locations: classpath*:net/dpwl/hellospringboot/mapper/**/*.xml 
+     type-aliases-package: net.dpwl.hellospringboot.entity  # 配置实体类的包路径，使Mybatis-Plus能够自动扫描并识别实体类
+   
+   ```
+
+   myBatis自动配置原理
+
+   ```java
+   	@Bean
+       @ConditionalOnMissingBean
+       public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+           MybatisSqlSessionFactoryBean factory = new MybatisSqlSessionFactoryBean();
+     //只要配置了DataSource的bean就会自动注入进来      
+           factory.setDataSource(dataSource);
+           factory.setVfs(SpringBootVFS.class);
+           factory.setApplicationContext(this.applicationContext);
+    // 设置config-location，MyBatis的全局配置文件
+           if (StringUtils.hasText(this.properties.getConfigLocation())) {
+               factory.setConfigLocation(this.resourceLoader.getResource(this.properties.getConfigLocation()));
+           }
+   // 可以从这里设置settings是另一种定制方式的体现
+           this.applyConfiguration(factory);
+   // 相当于mybatis全局配置文件中 <properties>可以引用外部的配置文件内容</properties>       
+           if (this.properties.getConfigurationProperties() != null) {
+               factory.setConfigurationProperties(this.properties.getConfigurationProperties());
+           }
+   // 配置mybatis插件的拦截器，拦截器只需要实现了Interceptor接口作为Bean就会被自动注入
+           if (!ObjectUtils.isEmpty(this.interceptors)) {
+               factory.setPlugins(this.interceptors);
+           }
+   // 设置数据库厂商Id
+           if (this.databaseIdProvider != null) {
+               factory.setDatabaseIdProvider(this.databaseIdProvider);
+           }
+   // 设置别名，它仅用于xml配置，降低全限定类名的长度
+           if (StringUtils.hasLength(this.properties.getTypeAliasesPackage())) {
+               factory.setTypeAliasesPackage(this.properties.getTypeAliasesPackage());
+           }
+   // 可以通过父类过滤哪些类需要使用别名
+           if (this.properties.getTypeAliasesSuperType() != null) {
+               factory.setTypeAliasesSuperType(this.properties.getTypeAliasesSuperType());
+           }
+   // 设置类型处理器（根据包）
+           if (StringUtils.hasLength(this.properties.getTypeHandlersPackage())) {
+               factory.setTypeHandlersPackage(this.properties.getTypeHandlersPackage());
+           }
+   // 设置类型处理器（根据名称）
+           if (!ObjectUtils.isEmpty(this.typeHandlers)) {
+               factory.setTypeHandlers(this.typeHandlers);
+           }
+   // 设置mapper.xml映射文件
+           if (!ObjectUtils.isEmpty(this.properties.resolveMapperLocations())) {
+               factory.setMapperLocations(this.properties.resolveMapperLocations());
+           }
+   // 这里没有设置mybatis的settings,1.可以通过全局配置文件配置 2.可以通过this.applyConfiguration(factory);这里设置：在配置文件中配置configuration。例如：mybaits.configuration.map-underscore-to-camel-case:true 下划线转驼峰命名，configuration封装了mybatis的所有信息，配置了configuration，它就通过this.applyConfiguration(factory)的方式完成配置。
+           Objects.requireNonNull(factory);
+           this.getBeanThen(TransactionFactory.class, factory::setTransactionFactory);
+           Class<? extends LanguageDriver> defaultLanguageDriver = this.properties.getDefaultScriptingLanguageDriver();
+           if (!ObjectUtils.isEmpty(this.languageDrivers)) {
+               factory.setScriptingLanguageDrivers(this.languageDrivers);
+           }
+   
+           Optional var10000 = Optional.ofNullable(defaultLanguageDriver);
+           Objects.requireNonNull(factory);
+           var10000.ifPresent(factory::setDefaultScriptingLanguageDriver);
+           this.applySqlSessionFactoryBeanCustomizers(factory);
+           GlobalConfig globalConfig = this.properties.getGlobalConfig();
+           Objects.requireNonNull(globalConfig);
+           this.getBeanThen(MetaObjectHandler.class, globalConfig::setMetaObjectHandler);
+           Objects.requireNonNull(globalConfig);
+           this.getBeanThen(AnnotationHandler.class, globalConfig::setAnnotationHandler);
+           Objects.requireNonNull(globalConfig);
+           this.getBeanThen(PostInitTableInfoHandler.class, globalConfig::setPostInitTableInfoHandler);
+           this.getBeansThen(IKeyGenerator.class, (i) -> globalConfig.getDbConfig().setKeyGenerators(i));
+           Objects.requireNonNull(globalConfig);
+           this.getBeanThen(ISqlInjector.class, globalConfig::setSqlInjector);
+           Objects.requireNonNull(globalConfig);
+           this.getBeanThen(IdentifierGenerator.class, globalConfig::setIdentifierGenerator);
+           factory.setGlobalConfig(globalConfig);
+           return factory.getObject();
+       }
+   ```
+
+   要定制mybatis只有两种方法：
+
+   1. 使用mybatis全局配置文件
+   2. 可以使用Application.yml中配置configuration或自定义一个类实现ConfigurationCustomizer接口的customize方法。
+
+   如果是实现接口的方法定义时不能同时存在全局配置文件，如果存在自定义类就不会生效。
+
+### spring boot 启动原理
+
+![QQ20260213-150951](.\img\QQ20260213-150951.png)
+
+1. SpringApplication.run() 启动springboot应用
+
+   ```java
+   SpringApplication.run(HellospringbootApplication.class, args);
+   ```
+
+2. 使用自定义SpringApplication进行启动
+
+   ```java
+   public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
+           return (new SpringApplication(primarySources)).run(args);
+       }
+   ```
+
+   - 创建HellospringbootApplication
+
+     ```java
+     public SpringApplication(@Nullable ResourceLoader resourceLoader, Class<?>... primarySources) {
+             this.addCommandLineProperties = true;
+             this.addConversionService = true;
+             this.headless = true;
+             this.initializers = new ArrayList();
+             this.listeners = new ArrayList();
+             this.additionalProfiles = Collections.emptySet();
+             this.applicationContextFactory = ApplicationContextFactory.DEFAULT;
+             this.applicationStartup = ApplicationStartup.DEFAULT;
+             this.properties = new ApplicationProperties();
+             this.resourceLoader = resourceLoader;
+             Assert.notNull(primarySources, "'primarySources' must not be null");
+         //将启动类放入primarySources
+             this.primarySources = new LinkedHashSet(Arrays.asList(primarySources));
+     /*根据isServletApplication推算当前web应用的类型（SERVLET,REACTIVE）*/        this.properties.setWebApplicationType(WebApplicationType.deduce());
+         /*就是去spring.Factories中去获取所有key：org.springframework.context.BootstrapRegistryInitializer*/ 
+             this.bootstrapRegistryInitializers = new ArrayList(this.getSpringFactoriesInstances(BootstrapRegistryInitializer.class));
+      //就是去spring.Factories中去获取所有key：org.springframework.context.ApplicationContextInitializer（活动7个）
+         this.setInitializers(this.getSpringFactoriesInstances(ApplicationContextInitializer.class));
+     /*就是去spring.Factories中去获取所有key：org.springframework.context.ApplicationListener*/        this.setListeners(this.getSpringFactoriesInstances(ApplicationListener.class));
+        /*根据main方法推算出mainApplicationClass*/ 
+             this.mainApplicationClass = this.deduceMainApplicationClass();
+         }
+     ```
+
+     总结：获取启动类，获取web应用类型，读取了对外扩展的BootstrapRegistryInitializer，ApplicationContextInitializer，ApplicationListener
+
+     推算main方法所在的类。就是初始化了一些信息
+
+   - 启动
+     run方法：启动springboot最核心的逻辑
+
+     ```java
+     public ConfigurableApplicationContext run(String... args) {
+           // 用来记录当前springboot启动耗时记录 
+         Startup startup = SpringApplication.Startup.create();
+             if (this.properties.isRegisterShutdownHook()) {
+                 //就是记录了启动开始时间
+                 shutdownHook.enableShutdownHookAddition();
+                
+             }
+     
+             DefaultBootstrapContext bootstrapContext = this.createBootstrapContext();
+         //它是任何spring上下文的接口，所以可以接收任何ApplicationContext实现
+             ConfigurableApplicationContext context = null;
+         // 开启了headless模式
+             this.configureHeadlessProperty();
+     // 去spring.factroies中读取了SpringApplicationRunListener的组件，就是用来发布事件或者运行监听器
+             SpringApplicationRunListeners listeners = this.getRunListeners(args);
+     // 运行监听器
+             listeners.starting(bootstrapContext, this.mainApplicationClass);
+     
+             try {
+                 ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+                 ConfigurableEnvironment environment = this.prepareEnvironment(listeners, bootstrapContext, applicationArguments);
+                 Banner printedBanner = this.printBanner(environment);
+                 context = this.createApplicationContext();
+                 context.setApplicationStartup(this.applicationStartup);
+                 //执行上下文
+                 this.prepareContext(bootstrapContext, context, environment, listeners, applicationArguments, printedBanner);
+                 //属性spring上下文
+                 this.refreshContext(context);
+                 this.afterRefresh(context, applicationArguments);
+                 Duration timeTakenToStarted = startup.started();
+                 if (this.properties.isLogStartupInfo()) {
+                     (new StartupInfoLogger(this.mainApplicationClass, environment)).logStarted(this.getApplicationLog(), startup);
+                 }
+     
+                 listeners.started(context, timeTakenToStarted);
+                 this.callRunners(context, applicationArguments);
+             } catch (Throwable ex) {
+                 throw this.handleRunFailure(context, ex, listeners);
+             }
+     
+             try {
+                 if (context.isRunning()) {
+                     listeners.ready(context, startup.ready());
+                 }
+     
+                 return context;
+             } catch (Throwable ex) {
+                 throw this.handleRunFailure(context, ex, (SpringApplicationRunListeners)null);
+             }
+         }
+     
+     private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, DefaultBootstrapContext bootstrapContext, ApplicationArguments applicationArguments) {
+          // 根据webApplicationType创建Environment 创建完就会读取：java环境变量和系统环境变量
+             ConfigurableEnvironment environment = this.getOrCreateEnvironment();
+     // 获取命令行参数读取到环境变量中    
+             this.configureEnvironment(environment, applicationArguments.getSourceArgs());
+       // 读取自动配置类的配置信息,将@PropertySource的配置信息：放在第一位，因为它的优先级最低，会被下面的覆盖上面的
+             ConfigurationPropertySources.attach(environment);
+             listeners.environmentPrepared(bootstrapContext, environment);
+             ApplicationInfoPropertySource.moveToEnd(environment);
+             DefaultPropertiesPropertySource.moveToEnd(environment);
+             Assert.state(!environment.containsProperty("spring.main.environment-prefix"), "Environment prefix cannot be set via properties.");
+         // 将所有spring.main 开头是配置信息绑定到SpringApplication类   
+         this.bindToSpringApplication(environment);
+             if (!this.isCustomEnvironment) {
+                 // 监听器又发布一个事件
+                 EnvironmentConverter environmentConverter = new EnvironmentConverter(this.getClassLoader());
+                 environment = environmentConverter.convertEnvironmentIfNecessary(environment, this.deduceEnvironmentClass());
+             }
+     
+             ConfigurationPropertySources.attach(environment);
+             return environment;
+         }
+     ```
+
+     6=2

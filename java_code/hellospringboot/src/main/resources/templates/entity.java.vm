@@ -1,0 +1,173 @@
+##
+## MyBatis-Plus 3.5.x 实体类模板（Swagger 3/OpenAPI 3 适配版）
+## 修改内容：
+## 1. Swagger 2 → Swagger 3 (@ApiModel → @Schema)
+## 2. 包路径更新 (io.swagger.v3.oas.annotations.media.*)
+## 3. 注解属性适配 (value → description, 移除多余属性)
+##
+package ${package.Entity};
+
+#foreach($pkg in ${table.importPackages})
+import ${pkg};
+#end
+
+## ✅ Swagger 3 注解导入（关键修改）
+#if(${swagger})
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema;
+#end
+
+## ✅ Spring Doc 兼容（可选，与上者二选一）
+## import io.swagger.v3.oas.annotations.media.Schema;
+
+#if(${entityLombokModel})
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+    #if(${chainModel})
+    import lombok.experimental.Accessors;
+    #end
+#end
+
+#if(${superEntityClass})
+import ${superEntityClass};
+#end
+
+#if(${activeRecord})
+import com.baomidou.mybatisplus.extension.activerecord.Model;
+#end
+
+/**
+ * $!{table.comment} 实体类
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+    #if(${entityLombokModel})
+    @Data
+        #if(${superEntityClass})
+        @EqualsAndHashCode(callSuper = true)
+        #else
+        @EqualsAndHashCode(callSuper = false)
+        #end
+        #if(${chainModel})
+        @Accessors(chain = true)
+        #end
+    #end
+
+    #if(${table.convert})
+    @TableName("${table.name}")
+    #end
+
+    ## ✅ Swagger 3 @Schema 注解（替换原 @ApiModel）
+    #if(${swagger})
+    @Schema(name = "${entity}", description = "$!{table.comment}")
+    #end
+
+    #if(${activeRecord})
+    public class ${entity} extends Model<${entity}> {
+    #elseif(${superEntityClass})
+        public class ${entity} extends ${superEntityClass}#if(${activeRecord})<${entity}>#end {
+    #else
+        public class ${entity} implements Serializable {
+    #end
+
+    ## ---------- 序列化版本号 ----------
+    private static final long serialVersionUID = 1L;
+
+    ## ---------- 字段遍历生成 ----------
+    #foreach($field in ${table.fields})
+        #if(${field.keyFlag})
+            #set($keyPropertyName=${field.propertyName})
+        #end
+
+        #if("$!field.comment" != "")
+            ## ✅ Swagger 3 字段注解（关键修改）
+            #if(${swagger})
+            @Schema(description = "${field.comment}")
+            #else
+            /**
+             * ${field.comment}
+             */
+            #end
+        #end
+
+        #if(${field.keyFlag})
+            ## ---------- 主键策略 ----------
+            #if(${field.keyIdentityFlag})
+            @TableId(value = "${field.annotationColumnName}", type = IdType.AUTO)
+            #elseif(!$null.isNull(${idType}) && "$!idType" != "")
+            @TableId(value = "${field.annotationColumnName}", type = IdType.${idType})
+            #elseif(${field.convert})
+            @TableId("${field.annotationColumnName}")
+            #end
+        #else
+            ## ---------- 普通字段 ----------
+            #if(${field.convert})
+            @TableField("${field.annotationColumnName}")
+            #end
+        #end
+
+        ## ---------- 乐观锁注解 ----------
+        #if(${field.versionField})
+        @Version
+        #end
+
+        ## ---------- 逻辑删除注解 ----------
+        #if(${field.logicDeleteField})
+        @TableLogic
+        #end
+
+    private ${field.propertyType} ${field.propertyName};
+
+    #end
+
+    ## ---------- 非主键字段关联查询字段（如有） ----------
+    #foreach($field in ${table.commonFields})
+        #if(${field.convert})
+        @TableField("${field.name}")
+        #end
+    private ${field.propertyType} ${field.propertyName};
+    #end
+
+    ## ---------- 无 Lombok 时的 getter/setter（保留原逻辑）---------
+    #if(!${entityLombokModel})
+        #foreach($field in ${table.fields})
+            #if(${field.propertyType.equals("boolean")})
+                #set($getprefix="is")
+            #else
+                #set($getprefix="get")
+            #end
+
+            public ${field.propertyType} ${getprefix}${field.capitalName}() {
+            return ${field.propertyName};
+        }
+
+            #if(${chainModel})
+                public ${entity} set${field.capitalName}(${field.propertyType} ${field.propertyName}) {
+            #else
+                public void set${field.capitalName}(${field.propertyType} ${field.propertyName}) {
+            #end
+            this.${field.propertyName} = ${field.propertyName};
+            #if(${chainModel})
+                return this;
+            #end
+        }
+        #end
+    #end
+
+    ## ---------- 默认 toString ----------
+    #if(!${entityLombokModel})
+        @Override
+        public String toString() {
+        return "${entity}{" +
+            #foreach($field in ${table.fields})
+                #if($!{foreach.index}==0)
+                        "${field.propertyName}=" + ${field.propertyName} +
+                #else
+                        ", ${field.propertyName}=" + ${field.propertyName} +
+                #end
+            #end
+                "}";
+    }
+    #end
+}
