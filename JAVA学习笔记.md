@@ -11647,4 +11647,150 @@ public class LogAspectj {
          }
      ```
 
-     6=2
+     spring下如果出现2个重名的bean，则后读取的会覆盖前面
+     springboot在这里默认是不允许覆盖，当处理2个重名的bean会直接抛出异常
+     springboot启动流程总结：
+     
+     1. 初始化SpringApplication从spring.factories读取listener，ApplicationContextInitlailzer
+     2. 允许run方法
+     3. 读取 环境变量 配置信息..
+     4. 创建SpringApplication上下文（ServletWebServerApplicationContext）
+     5. 预初始化上下文 ：读取启动类
+     6. 调用refresh加载Ioc容器
+        - 加载所有的自动配置类
+        - 创建Servlet容器
+     7. 在这个过程中springboot会调用很多监听器对外进行扩展
+   
+   ### springboot自定义starter
+   
+   SpringBoot最强大的功能就是把我们常用的场景抽取成了一个个starter(场景启动器），我们通过引I入springboot为我提供的这些场最启动器，我们再进行少量的配置就能使用相应的功能。即使是这样，springboot也不能囊括我们所有的使用场景，往往我们需要自定义starter，来简化我们对springboot的使用。
+   
+   根据springboot的规范，一个sarter由两部分组成，一个starter是一个空的jar文件，仅仅提供辅助性依赖管理，这些依赖需要自动装配或其他类库。
+   
+   例如制作一个自定义的starter，
+   
+   1. 创建一个maven父项目
+   
+   ```xml
+   <parent>
+   <groupId>org.springframework.boot</groupId>
+   <artifactId>spring-boot-starter-parent</artifactId>
+   <version>2.3.6.RELEASE</version>
+   <relativePath/> <!-
+   lookup parent from repository
+   </parent>
+   <!--打包方式pom，这是一个父项目不存放具体业务-->
+   <packaging>pom</packaging>
+   <groupId>net.dpwl.springboot</groupId>
+   <artifactId>springboot_custome_starter</artifactId>
+   <version>0.0.1-SNAPSHOT</version>
+   <name>springboot_custome_starter</name>
+   <description>SpringBoot自定义starter</description>
+   <properties>
+   <java.version>1.8</java.version>
+   </properties>
+   ```
+
+2. 创建一个starter模块，作为空的jar存放辅助性依赖管理
+   ```xml
+   <parent>
+   <artifactId>springboot_custome_starter</artifactId>
+   <groupId>net.dpwl.springboot</groupId>
+   <version>0.0.1-SNAPSHOT</version>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+   <description>
+       starter(启动器)是一个空的jar文件，仅仅提供辅助性依赖管理，这些依赖需要自动装配或其他类库
+   </description>
+   <artifactId>dpwl-spring-boot-starter</artifactId>
+   <dependencies>
+       <!--创建好autoconfigure后引入autoconfigure-->
+   	<dependency>
+       	<groupId>net.dpwl.springboot</groupId>
+           <artifactId>dpwl-spring-boot-starter</artifactId>
+           <version>0.0.1-SNAPSHOT</version>
+       </dependency>
+       <!--如果当前starter还需要其他的依赖，在这里引用-->
+       <dependency>
+           <!--配置文件处理器，配置文件进行绑定会有有提示-->
+       	<groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-configuration-processor</artifactId>
+           <optional>true</optional>
+       </dependency>
+   </dependencies>
+   ```
+
+3. 再创建一个autoConfigure模块，存放具体的springboot整合代码。
+   ```xml
+   <parent>
+   <artifactId>springboot_custome_starter</artifactId>
+   <groupId>net.dpwl.springboot</groupId>
+   <version>0.0.1-SNAPSHOT</version>
+   </parent>
+   <modelVersion>4.0.0</modelVersion>
+   <artifactId>dpwl-spring-boot-autoconfigure</artifactId>
+   ```
+
+   创建包starter.net.dpwl下的类DpwlAutoConfiguration
+   ```java
+   // 实现给web应用自动添加一个首页的功能
+   @Configuration  //配置类
+   @ConfitionalOnProperty(value="dpwl.hello.name") //条件判断当配置了dpwl.hello.name时，该来才自动加载
+   @EnableConfigurationProperties(HelloProperties.class)
+   public class DpwlAutoConfiguration{
+       @Autowired
+       HelloProperties helloProperties;
+       
+       @Bean
+       public IndexController IndexController(){
+           return new IndexController(helloProperties);
+       }
+   }
+   ```
+
+   controller类：
+   ```java
+   @RestController
+   public class IndexController{
+       HelloProperties helloProperties;
+       
+       public IndexController(HelloProperties helloProperties){
+           this.helloProperties=helloProperties;
+       }
+       
+       @RequestMapping("/")
+       public String index(){
+           return helloProperties.getName()+",欢迎您！"; // 我们希望xxx可以从配置文件获取到
+       }
+   }
+   ```
+
+   配置类：
+   ```java
+   @ConfigurationProperties("dpwl.hello")  //自动配置类（以dpwl.hello开头的就会自动绑定到本类的属性）
+   public class HelloProperties{
+       private String name;
+       public String getName(){
+           return name;
+       }   
+       public void setName(String name){
+           this.name=name;
+       }
+   }
+   ```
+
+   最后在resources/META-INF/创建spring-factories
+
+   ```
+   org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+   	starter.net.dpwl.DpwlAutoConfiguration
+   ```
+
+   打包安装，先把autoconfigure模块install到本地仓库，再把starter模块install，最后install父项目。就可以在其他项目中引用这个场景启动器了。
+
+### graalVM
+
+SpringNative也是升级的一个重大特性，支持使用GraalVM将SpringBoot的应用程序编译成本地可执行的镜像文件，可以显著提升启动速度、峰值性能以及减少内存使用。
+我们传统的应用都是编译成字节码，然后通过VM解释并最终编译成机器码来运行，而SpringNative则是通过AOT提前编译为机器码，在运行时直接静态编译成可执行文件，不依赖JVM。GraalVM的即时编译器和AOT编译器可以显著提高应用程序的性能。据测试，GraalVM的性能可以比传统的JVM高出20%-100%。
+近几年来，Go语言火了，Go语言是一种编译型语言，我们需要先把Go代码直接编译成为一个二进制执行文件，比如windows上的exe文件，然后直接运行exe文件就能快速启动程序。
+如果说，十年前，Spring是Java的春天，那现在GraalVM就是Java的救世主，Java要想不被Go挤掉，整个Java生态都要向GraalVM靠齐。
